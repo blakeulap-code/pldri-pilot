@@ -249,6 +249,36 @@ const lguData = [
     domain1: [{ subject: 'Paradiplomacy', value: 0.2 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.4 }, { subject: 'Aid Conc', value: 0.1 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0.2 }, { subject: 'Foreign Don', value: 0.1 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.4 }, { subject: 'Civic Space', value: 0.3 }, { subject: 'Dynastic', value: 0.7 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 0.0 }],
     domain3: [{ subject: 'Narrative', value: 0.5 }, { subject: 'Foreign Pres', value: 0.4 }, { subject: 'C3 Reports', value: 0.9 }]
+  },
+  { 
+    id: 23, name: "Misamis Oriental", province: "Misamis Oriental", region: "Region X", type: "Province", typology: "Deferred", shade: "Gray", 
+    lceName: "Juliette Uy", term: "Incumbent", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
+    stats: { psgc: "See Records", pop: "N/A", area: "N/A", density: "N/A", urbanRural: "Mixed", income: "1st Class", poverty: "N/A", coastal: "Yes" },
+    tags: ["Reserved", "Mindanao"],
+    analysis: "This LGU is currently marked as Reserved/Deferred in the deployment selection.",
+    domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
+    domain2: [{ subject: 'Inst Opacity', value: 0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
+    domain3: [{ subject: 'Narrative', value: 0 }, { subject: 'Foreign Pres', value: 0 }, { subject: 'C3 Reports', value: 0 }]
+  },
+  { 
+    id: 24, name: "San Fernando City", province: "La Union", region: "Region I", type: "City", typology: "Deferred", shade: "Gray", 
+    lceName: "Hermenegildo A. Gualberto", term: "Incumbent", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
+    stats: { psgc: "See Records", pop: "N/A", area: "N/A", density: "N/A", urbanRural: "Component City", income: "3rd Class", poverty: "N/A", coastal: "Yes" },
+    tags: ["Reserved", "Luzon"],
+    analysis: "This LGU is currently marked as Reserved/Deferred in the deployment selection.",
+    domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
+    domain2: [{ subject: 'Inst Opacity', value: 0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
+    domain3: [{ subject: 'Narrative', value: 0 }, { subject: 'Foreign Pres', value: 0 }, { subject: 'C3 Reports', value: 0 }]
+  },
+  { 
+    id: 25, name: "Additional LGU", province: "TBD", region: "TBD", type: "TBD", typology: "Deferred", shade: "Gray", 
+    lceName: "TBD", term: "TBD", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
+    stats: { psgc: "See Records", pop: "N/A", area: "N/A", density: "N/A", urbanRural: "N/A", income: "N/A", poverty: "N/A", coastal: "N/A" },
+    tags: ["Reserved"],
+    analysis: "This LGU is currently marked as Reserved/Deferred in the deployment selection.",
+    domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
+    domain2: [{ subject: 'Inst Opacity', value: 0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
+    domain3: [{ subject: 'Narrative', value: 0 }, { subject: 'Foreign Pres', value: 0 }, { subject: 'C3 Reports', value: 0 }]
   }
 ].map(lgu => {
   // Mapping public image URLs for highly recognizable LCEs
@@ -310,7 +340,7 @@ export default function App() {
   const [editFormData, setEditFormData] = useState({});
   const [isConnected, setIsConnected] = useState(false);
 
-  // Dynamic Dashboard Stats
+  // Dynamic Dashboard Stats based on actual array
   const totalLgus = lguData.length;
   const countProvinces = lguData.filter(l => l.type.toLowerCase().includes('province')).length;
   const countCities = lguData.filter(l => l.type.toLowerCase().includes('city')).length;
