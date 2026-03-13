@@ -9,9 +9,8 @@ import {
   Edit, Save, X, PlusCircle, Cloud, Sparkles
 } from 'lucide-react';
 
-// --- FIREBASE IMPORTS ---
+// --- FIREBASE IMPORTS (Auth removed, using direct Test Mode access) ---
 import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "firebase/firestore";
 
 // --- YOUR FIREBASE CONFIGURATION ---
@@ -26,7 +25,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
 const SCHEDULES_PATH = 'artifacts/pldri/public/data/schedules';
 
@@ -252,7 +250,21 @@ const lguData = [
     domain2: [{ subject: 'Inst Opacity', value: 0.4 }, { subject: 'Civic Space', value: 0.3 }, { subject: 'Dynastic', value: 0.7 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 0.0 }],
     domain3: [{ subject: 'Narrative', value: 0.5 }, { subject: 'Foreign Pres', value: 0.4 }, { subject: 'C3 Reports', value: 0.9 }]
   }
-];
+].map(lgu => {
+  // Mapping public image URLs for highly recognizable LCEs
+  const imageMap = {
+    "RODRIGO ROA DUTERTE": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Rodrigo_Duterte_portrait.jpg",
+    "FRANCISCO 'ISKO MORENO' DOMAGOSO": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Mayor_Isko_Moreno_portrait.jpg",
+    "Benjamin B. Magalong": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Mayor_Benjamin_Magalong_%28cropped%29.jpg",
+    "MARIA LAARNI L. CAYETANO": "https://upload.wikimedia.org/wikipedia/commons/3/30/Lani_Cayetano_2022.jpg",
+    "LUCILO R BAYRON": "https://upload.wikimedia.org/wikipedia/commons/1/11/Lucilo_R._Bayron.jpg"
+  };
+
+  return {
+    ...lgu,
+    imageUrl: imageMap[lgu.lceName] || null
+  };
+});
 
 // --- REAL SCHEDULE DATA FROM YOUR CSV ---
 const defaultSchedules = [
@@ -296,36 +308,28 @@ export default function App() {
   const [schedules, setSchedules] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
-  const [user, setUser] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Dynamic Dashboard Stats based on actual array
+  // Dynamic Dashboard Stats
   const totalLgus = lguData.length;
   const countProvinces = lguData.filter(l => l.type.toLowerCase().includes('province')).length;
   const countCities = lguData.filter(l => l.type.toLowerCase().includes('city')).length;
   const countMunis = lguData.filter(l => l.type.toLowerCase().includes('municipality')).length;
 
   useEffect(() => {
-    const initAuth = async () => {
-      try { await signInAnonymously(auth); } catch (err) { console.error(err); }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
     const queryCollection = collection(db, SCHEDULES_PATH);
     const unsubscribe = onSnapshot(queryCollection, (snapshot) => {
       const scheduleData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       scheduleData.sort((a, b) => a.date.localeCompare(b.date));
       setSchedules(scheduleData);
-    }, (error) => console.error(error));
+      setIsConnected(true); // Signals a successful connection
+    }, (error) => {
+      console.error("Firebase connection error:", error);
+    });
     return () => unsubscribe();
-  }, [user]);
+  }, []);
 
   const handleLoadDefaults = async () => {
-    if (!user) return;
     for (const schedule of defaultSchedules) {
       await setDoc(doc(db, SCHEDULES_PATH, schedule.id), schedule);
     }
@@ -337,7 +341,6 @@ export default function App() {
   };
 
   const handleSaveClick = async () => {
-    if (!user) return;
     try {
       const scheduleRef = doc(db, SCHEDULES_PATH, editFormData.id);
       await setDoc(scheduleRef, editFormData);
@@ -353,7 +356,6 @@ export default function App() {
   };
 
   const handleDelete = async (id) => {
-    if (!user) return;
     try { await deleteDoc(doc(db, SCHEDULES_PATH, id)); } catch (err) { console.error(err); }
   };
 
@@ -463,7 +465,7 @@ export default function App() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">Master Logistics Tracker</h3>
                   <p className="text-xs font-medium mt-1">
-                    {user ? <span className="text-emerald-600">🟢 Connected to Cloud Database</span> : <span className="text-orange-500">🟠 Connecting to cloud...</span>}
+                    {isConnected ? <span className="text-emerald-600">🟢 Connected to Cloud Database</span> : <span className="text-orange-500">🟠 Connecting to cloud...</span>}
                   </p>
                 </div>
                 <div className="flex space-x-2">
@@ -574,7 +576,11 @@ export default function App() {
                   {/* LCE Box */}
                   <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 text-center">
                     <div className={`w-32 h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden bg-white mb-4 ${selectedLgu.shade === 'Red' ? 'border-red-500' : selectedLgu.shade === 'Blue' ? 'border-blue-500' : 'border-slate-400'}`}>
-                      <img src={`https://ui-avatars.com/api/?name=${selectedLgu.lceName.replace(/ /g, '+')}&background=0D8ABC&color=fff&size=150`} alt="LCE" className="w-full h-full object-cover"/>
+                      <img 
+                        src={selectedLgu.imageUrl || `https://ui-avatars.com/api/?name=${selectedLgu.lceName.replace(/ /g, '+')}&background=0D8ABC&color=fff&size=150`} 
+                        alt="LCE" 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Local Chief Executive</div>
                     <h3 className="font-black text-slate-900 text-lg leading-tight mt-1">{selectedLgu.lceName}</h3>
