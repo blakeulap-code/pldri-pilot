@@ -5,11 +5,11 @@ import {
 } from 'recharts';
 import { 
   LayoutDashboard, CalendarDays, MapPin, Search, Printer, 
-  Building, AlertTriangle, Users, Map, Plane, Ship, ShieldAlert,
-  Edit, Save, X, PlusCircle, Cloud, Sparkles
+  Building, AlertTriangle, Users, Map as MapIcon, Plane, Ship, ShieldAlert,
+  Edit, Save, X, PlusCircle, Cloud, Sparkles, Newspaper, Lock
 } from 'lucide-react';
 
-// --- FIREBASE IMPORTS (Auth removed, using direct Test Mode access) ---
+// --- FIREBASE IMPORTS ---
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "firebase/firestore";
 
@@ -28,13 +28,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SCHEDULES_PATH = 'artifacts/pldri/public/data/schedules';
 
-// --- REAL LGU DATA WITH FULL DEMOGRAPHICS EXTRACTED ---
-const lguData = [
+// --- INITIAL LGU DATA (Added Age and Photo mappings) ---
+const initialLguData = [
   { 
     id: 1, name: "Zamboanga City", province: "Zamboanga Del Sur", region: "Region IX", type: "1st class city", typology: "A+B+C", shade: "Red", 
-    lceName: "KHYMER ADAN TAING OLASO", term: "1st term", background: "Master Mariner, Councilor from 2019 to 2022 and Representative from 2022 to 2025. Filipino father and Cambodian mother.", totalScore: 0.3599,
+    lceName: "KHYMER ADAN TAING OLASO", age: "50", term: "1st term", 
+    background: "Master Mariner, Councilor from 2019 to 2022 and Representative from 2022 to 2025. Filipino father and Cambodian mother.", totalScore: 0.3599,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
     stats: { psgc: "097332000", pop: "977,234", area: "1,414.70 sq km", density: "690/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "14.2%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Mindanao", "Coastal", "Gateway"],
     analysis: "Zamboanga City's selection is driven by critical data points across all three domains. It shows significant LSR dependence and measurable direct foreign donations. Its strategic proximity compounds its complex security environment. It maxes out indicators for institutional opacity and registers a very high foreign presence footprint.",
     domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0.004 }, { subject: 'LSR Dep', value: 0.796 }, { subject: 'Aid Conc', value: 0.279 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0.296 }],
     domain2: [{ subject: 'Inst Opacity', value: 1.0 }, { subject: 'Civic Space', value: 1.0 }, { subject: 'Dynastic', value: 0.333 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
@@ -42,9 +43,10 @@ const lguData = [
   },
   { 
     id: 2, name: "Puerto Princesa City", province: "Palawan", region: "MIMAROPA", type: "1st class city", typology: "A+B+C", shade: "Blue", 
-    lceName: "LUCILO R BAYRON", term: "4th term (re-elected 2025)", background: "A veteran official known for his 'Apuradong Serbisyo' brand. His 2025–2028 term focuses on transforming Puerto Princesa into a major cruise ship hub and strengthening disaster resilience through partnerships with the U.S. Navy.", totalScore: 0.2918,
+    lceName: "LUCILO R BAYRON", age: "80", term: "4th term (re-elected 2025)", 
+    background: "A veteran official known for his 'Apuradong Serbisyo' brand. His 2025–2028 term focuses on transforming Puerto Princesa into a major cruise ship hub and strengthening disaster resilience through partnerships with the U.S. Navy.", totalScore: 0.2918,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/1/11/Lucilo_R._Bayron.jpg",
     stats: { psgc: "175316000", pop: "307,079", area: "2,381.02 sq km", density: "130/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "12.5%", coastal: "Yes" },
-    tags: ["PLDRI Target", "MIMAROPA", "Coastal", "Tourism"],
     analysis: "Puerto Princesa serves as a critical Palawan case study. It scores highly in Strategic Proximity due to its location relative to the West Philippine Sea, and shows strong US-linked defense infrastructure engagement coupled with high institutional opacity metrics.",
     domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0.757 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0.732 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
     domain2: [{ subject: 'Inst Opacity', value: 1.0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 1.0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
@@ -52,9 +54,10 @@ const lguData = [
   },
   { 
     id: 3, name: "Iloilo City", province: "Iloilo", region: "Region VI", type: "1st class city", typology: "A+B+C", shade: "Red", 
-    lceName: "RAISA MARIA LOURDES TREÑAS-CHU", term: "1st term", background: "Daughter of former Mayor Jerry Treñas, she transitioned from executive assistant to mayor in 2025. Her 'Iloilo Next' vision prioritizes digital governance, social services, and maintaining the city’s status as a top business hub.", totalScore: 0.2621,
+    lceName: "RAISA MARIA LOURDES TREÑAS-CHU", age: "42", term: "1st term", 
+    background: "Daughter of former Mayor Jerry Treñas, she transitioned from executive assistant to mayor in 2025. Her 'Iloilo Next' vision prioritizes digital governance, social services, and maintaining the city’s status as a top business hub.", totalScore: 0.2621,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
     stats: { psgc: "063022000", pop: "457,626", area: "78.34 sq km", density: "5,841/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "8.6%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Visayas", "Economic Hub"],
     analysis: "Provides an opportunity to explore outside the security-frontier narratives. Shows moderate paradiplomacy intensity and strategic proximity, coupled with institutional opacity.",
     domain1: [{ subject: 'Paradiplomacy', value: 0.576 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0.279 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0.732 }, { subject: 'Econ Enclaves', value: 0.002 }, { subject: 'Foreign Don', value: 0 }],
     domain2: [{ subject: 'Inst Opacity', value: 1.0 }, { subject: 'Civic Space', value: 0.5 }, { subject: 'Dynastic', value: 0.666 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 1.0 }],
@@ -62,9 +65,10 @@ const lguData = [
   },
   { 
     id: 4, name: "Cagayan", province: "Cagayan", region: "Region II", type: "1st class province", typology: "A+C", shade: "Red", 
-    lceName: "Edgar Aglipay", term: "1st term", background: "A retired PNP Chief and PMA graduate who won a highly contested 2025 race. He navigates Cagayan’s strategic role as a 'Gateway to the North,' balancing local economic development with national defense interests.", totalScore: 0.2927,
+    lceName: "Edgar Aglipay", age: "58", term: "1st term", 
+    background: "A retired PNP Chief and PMA graduate who won a highly contested 2025 race. He navigates Cagayan’s strategic role as a 'Gateway to the North,' balancing local economic development with national defense interests.", totalScore: 0.2927,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
     stats: { psgc: "021500000", pop: "1,268,603", area: "9,295.75 sq km", density: "140/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "12.8%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Luzon", "Defense Node"],
     analysis: "Cagayan's selection is heavily driven by extreme Local Source Revenue dependence (0.959) and notable strategic proximity (0.500) as a northern gateway hosting critical EDCA defense sites. Its institutional opacity is critically high, creating vulnerabilities.",
     domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0.002 }, { subject: 'LSR Dep', value: 0.959 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0.981 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.333 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0.666 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 1.0 }],
@@ -72,252 +76,89 @@ const lguData = [
   },
   { 
     id: 5, name: "Manila City", province: "Metro Manila", region: "NCR", type: "1st class city", typology: "C only", shade: "Gray", 
-    lceName: "FRANCISCO 'ISKO MORENO' DOMAGOSO", term: "1st term (returned)", background: "After a hiatus following his 2022 presidential bid, he successfully returned to the mayoralty in 2025. His 2026 agenda centers on Manila's 10-year urban renewal plan and revitalizing 'Sister City' ties with San Francisco.", totalScore: 0.4202,
+    lceName: "FRANCISCO 'ISKO MORENO' DOMAGOSO", age: "51", term: "1st term (returned)", 
+    background: "After a hiatus following his 2022 presidential bid, he successfully returned to the mayoralty in 2025. His 2026 agenda centers on Manila's 10-year urban renewal plan and revitalizing 'Sister City' ties with San Francisco.", totalScore: 0.4202,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Mayor_Isko_Moreno_portrait.jpg",
     stats: { psgc: "133900000", pop: "1,846,513", area: "42.88 sq km", density: "43,062/sq km", urbanRural: "Highly Urbanized", income: "Special Class", poverty: "5.3%", coastal: "Yes" },
-    tags: ["PLDRI Target", "NCR", "Capital"],
-    analysis: "Manila City acts as a pure 'C only' typology case. While its Domain A and B scores are relatively low due to economic independence, it completely dominates Domain C. It exhibits near-maximum current foreign presence and peaks in C3 reports.",
+    analysis: "Manila City acts as a pure 'C only' typology case. While its Domain A and B scores are relatively low due to economic independence, it completely dominates Domain C. The interview focus here should be on why Manila produces so many visible C-type signals: is it because of diplomatic concentration, sister-city activity, highly visible foreign presence, media attention, national capital effects, or recurring foreign-linked controversies?",
     domain1: [{ subject: 'Paradiplomacy', value: 0.038 }, { subject: 'Econ Dep', value: 0.008 }, { subject: 'LSR Dep', value: 0.227 }, { subject: 'Aid Conc', value: 0.094 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0.003 }, { subject: 'Foreign Don', value: 0.044 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.667 }, { subject: 'Civic Space', value: 0.5 }, { subject: 'Dynastic', value: 0.333 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 1.0 }],
     domain3: [{ subject: 'Narrative', value: 1.0 }, { subject: 'Foreign Pres', value: 0.988 }, { subject: 'C3 Reports', value: 1.0 }]
   },
   { 
     id: 6, name: "Nueva Ecija", province: "Nueva Ecija", region: "Region III", type: "Province", typology: "A+B+C", shade: "Gray", 
-    lceName: "Aurelio Umali", term: "Multiple terms", background: "A long-dominant political figure in Central Luzon. Known for significant agrarian influence.", totalScore: 0.2518,
+    lceName: "Aurelio Umali", age: "55", term: "Multiple terms", background: "A long-dominant political figure in Central Luzon. Known for significant agrarian influence.", totalScore: 0.2518,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
     stats: { psgc: "034900000", pop: "2,310,134", area: "5,751.33 sq km", density: "400/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "8.5%", coastal: "No" },
-    tags: ["PLDRI Target", "Luzon", "Agrarian"],
     analysis: "Selection based on composite vulnerability score and regional strategic relevance in Central Luzon.",
     domain1: [{ subject: 'Paradiplomacy', value: 0.2 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.6 }, { subject: 'Aid Conc', value: 0.3 }, { subject: 'Strategic Prox', value: 0.2 }, { subject: 'Econ Enclaves', value: 0.1 }, { subject: 'Foreign Don', value: 0.4 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.8 }, { subject: 'Civic Space', value: 0.4 }, { subject: 'Dynastic', value: 0.9 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 0.0 }],
     domain3: [{ subject: 'Narrative', value: 0.3 }, { subject: 'Foreign Pres', value: 0.4 }, { subject: 'C3 Reports', value: 0.2 }]
   },
   { 
-    id: 7, name: "Pampanga", province: "Pampanga", region: "Region III", type: "Province", typology: "A+B", shade: "Gray", 
-    lceName: "Lilia Pineda", term: "Returned as governor", background: "The matriarch of the Pineda political family. Focuses heavily on provincial health networks.", totalScore: 0.2699,
-    stats: { psgc: "035400000", pop: "2,437,709", area: "2,002.20 sq km", density: "1,217/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "4.8%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Luzon", "Ecozone Gateway"],
-    analysis: "High economic activity intersecting with concentrated political power structures and proximity to major logistics hubs (Clark).",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.3 }, { subject: 'Econ Dep', value: 0.4 }, { subject: 'LSR Dep', value: 0.2 }, { subject: 'Aid Conc', value: 0.1 }, { subject: 'Strategic Prox', value: 0.8 }, { subject: 'Econ Enclaves', value: 0.9 }, { subject: 'Foreign Don', value: 0.2 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.5 }, { subject: 'Civic Space', value: 0.3 }, { subject: 'Dynastic', value: 1.0 }, { subject: 'Party Align', value: 0.8 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.2 }, { subject: 'Foreign Pres', value: 0.7 }, { subject: 'C3 Reports', value: 0.4 }]
-  },
-  { 
-    id: 8, name: "Baguio City", province: "Benguet", region: "CAR", type: "City", typology: "A+B", shade: "Gray", 
-    lceName: "Benjamin B. Magalong", term: "3rd and final term", background: "A retired PNP General and FBI Academy graduate. Vocal on anti-corruption and good governance.", totalScore: 0.2347,
+    id: 7, name: "Baguio City", province: "Benguet", region: "CAR", type: "City", typology: "A+B", shade: "Gray", 
+    lceName: "Benjamin B. Magalong", age: "63", term: "3rd and final term", background: "A retired PNP General and FBI Academy graduate. Vocal on anti-corruption and good governance.", totalScore: 0.2347,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/4/4e/Mayor_Benjamin_Magalong_%28cropped%29.jpg",
     stats: { psgc: "141102000", pop: "366,358", area: "57.51 sq km", density: "6,370/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "6.2%", coastal: "No" },
-    tags: ["PLDRI Target", "North Luzon", "Urban Hub"],
     analysis: "Included for its strategic position as a northern hub, high tourist/foreign presence, and unique local governance dynamics.",
     domain1: [{ subject: 'Paradiplomacy', value: 0.6 }, { subject: 'Econ Dep', value: 0.2 }, { subject: 'LSR Dep', value: 0.3 }, { subject: 'Aid Conc', value: 0.4 }, { subject: 'Strategic Prox', value: 0.3 }, { subject: 'Econ Enclaves', value: 0.5 }, { subject: 'Foreign Don', value: 0.1 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.2 }, { subject: 'Civic Space', value: 0.2 }, { subject: 'Dynastic', value: 0.1 }, { subject: 'Party Align', value: 0.4 }, { subject: 'FOI', value: 1.0 }],
     domain3: [{ subject: 'Narrative', value: 0.1 }, { subject: 'Foreign Pres', value: 0.8 }, { subject: 'C3 Reports', value: 0.2 }]
   },
   { 
-    id: 9, name: "Lapu-Lapu City", province: "Cebu", region: "Region VII", type: "City", typology: "A+B", shade: "Blue", 
-    lceName: "MA. CYNTHIA CINDI KING CHAN", term: "1st term as mayor", background: "Focused on hosting the 2026 ASEAN Summit and expanding Mactan's infrastructure.", totalScore: 0.2060,
-    stats: { psgc: "072226000", pop: "497,374", area: "58.10 sq km", density: "8,560/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "11.1%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Visayas", "Ecozone"],
-    analysis: "Critical hub for international tourism and export processing zones, presenting unique economic dependence variables.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.4 }, { subject: 'Econ Dep', value: 0.8 }, { subject: 'LSR Dep', value: 0.1 }, { subject: 'Aid Conc', value: 0.2 }, { subject: 'Strategic Prox', value: 0.6 }, { subject: 'Econ Enclaves', value: 1.0 }, { subject: 'Foreign Don', value: 0.1 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.4 }, { subject: 'Civic Space', value: 0.3 }, { subject: 'Dynastic', value: 0.7 }, { subject: 'Party Align', value: 0.6 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.2 }, { subject: 'Foreign Pres', value: 0.9 }, { subject: 'C3 Reports', value: 0.1 }]
-  },
-  { 
-    id: 10, name: "Palawan", province: "Palawan", region: "MIMAROPA", type: "Province", typology: "A+C", shade: "Gray", 
-    lceName: "Amy Alvarez", term: "1st term as governor", background: "The first female governor of Palawan, managing critical geopolitical proximity.", totalScore: 0.2865,
-    stats: { psgc: "175300000", pop: "939,594", area: "14,649.73 sq km", density: "64/sq km", urbanRural: "Mostly Rural", income: "1st Class", poverty: "16.2%", coastal: "Yes" },
-    tags: ["PLDRI Target", "MIMAROPA", "Border Province"],
-    analysis: "Scores extremely high on strategic proximity due to maritime borders, coupled with foreign aid concentration.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.2 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.7 }, { subject: 'Aid Conc', value: 0.8 }, { subject: 'Strategic Prox', value: 1.0 }, { subject: 'Econ Enclaves', value: 0.1 }, { subject: 'Foreign Don', value: 0.5 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.6 }, { subject: 'Civic Space', value: 0.5 }, { subject: 'Dynastic', value: 0.8 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.7 }, { subject: 'Foreign Pres', value: 0.4 }, { subject: 'C3 Reports', value: 0.6 }]
-  },
-  { 
-    id: 11, name: "Subic", province: "Zambales", region: "Region III", type: "Municipality", typology: "A+C", shade: "Blue", 
-    lceName: "Jonathan John Khonghun", term: "Multiple terms", background: "Strong stance against maritime incursions while managing an industrial hub.", totalScore: 0.2615,
-    stats: { psgc: "037114000", pop: "111,912", area: "287.16 sq km", density: "390/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "12.0%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Luzon", "Naval Hub"],
-    analysis: "Direct intersection of commercial port operations, military history, and high economic enclave activity.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.1 }, { subject: 'Econ Dep', value: 0.6 }, { subject: 'LSR Dep', value: 0.3 }, { subject: 'Aid Conc', value: 0.1 }, { subject: 'Strategic Prox', value: 0.9 }, { subject: 'Econ Enclaves', value: 0.8 }, { subject: 'Foreign Don', value: 0.2 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.3 }, { subject: 'Civic Space', value: 0.2 }, { subject: 'Dynastic', value: 0.9 }, { subject: 'Party Align', value: 0.7 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.8 }, { subject: 'Foreign Pres', value: 0.6 }, { subject: 'C3 Reports', value: 0.5 }]
-  },
-  { 
-    id: 12, name: "Cebu", province: "Cebu", region: "Region VII", type: "Province", typology: "A only", shade: "Red", 
-    lceName: "Pamela Baricuatro", term: "1st term as governor", background: "A 'dark horse' winner in 2025 who unseated the Garcia dynasty.", totalScore: 0.2202,
-    stats: { psgc: "072200000", pop: "3,325,385", area: "4,943.72 sq km", density: "670/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "13.4%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Visayas", "Economic Center"],
-    analysis: "Presents a unique 'A only' profile, dominated by structural economic factors and vast foreign direct investments.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.9 }, { subject: 'Econ Dep', value: 0.7 }, { subject: 'LSR Dep', value: 0.1 }, { subject: 'Aid Conc', value: 0.4 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0.8 }, { subject: 'Foreign Don', value: 0.3 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.2 }, { subject: 'Civic Space', value: 0.1 }, { subject: 'Dynastic', value: 0.3 }, { subject: 'Party Align', value: 0.6 }, { subject: 'FOI', value: 1.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.1 }, { subject: 'Foreign Pres', value: 0.9 }, { subject: 'C3 Reports', value: 0.1 }]
-  },
-  { 
-    id: 13, name: "Tuguegarao City", province: "Cagayan", region: "Region II", type: "City", typology: "B+C", shade: "Gray", 
-    lceName: "Maila Rosario Ting", term: "2nd term", background: "Re-elected in 2025, known for firm governance and strict resource management.", totalScore: 0.2949,
-    stats: { psgc: "021529000", pop: "166,334", area: "144.80 sq km", density: "1,150/sq km", urbanRural: "Component City", income: "3rd Class", poverty: "10.2%", coastal: "No" },
-    tags: ["PLDRI Target", "North Luzon", "Provincial Capital"],
-    analysis: "Strongly complements the Cagayan provincial analysis, showing high fragility and signal markers within the urban center.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.2 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.5 }, { subject: 'Aid Conc', value: 0.2 }, { subject: 'Strategic Prox', value: 0.4 }, { subject: 'Econ Enclaves', value: 0.0 }, { subject: 'Foreign Don', value: 0.4 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.7 }, { subject: 'Civic Space', value: 0.5 }, { subject: 'Dynastic', value: 0.8 }, { subject: 'Party Align', value: 0.4 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.8 }, { subject: 'Foreign Pres', value: 0.6 }, { subject: 'C3 Reports', value: 0.7 }]
-  },
-  { 
-    id: 14, name: "Cotabato City", province: "Maguindanao del Norte", region: "BARMM", type: "City", typology: "B+C", shade: "Blue", 
-    lceName: "MOHAMMAD ALI MATABALAO", term: "Incumbent", background: "Bridge between BARMM government and city's population.", totalScore: 0.2258,
-    stats: { psgc: "124704000", pop: "325,079", area: "176.00 sq km", density: "1,850/sq km", urbanRural: "Ind. Component", income: "2nd Class", poverty: "25.6%", coastal: "Yes" },
-    tags: ["PLDRI Target", "BARMM", "Regional Center"],
-    analysis: "High institutional opacity and historical conflict signals make this a critical case for Domain B and C evaluations.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.1 }, { subject: 'Econ Dep', value: 0.0 }, { subject: 'LSR Dep', value: 0.8 }, { subject: 'Aid Conc', value: 0.7 }, { subject: 'Strategic Prox', value: 0.2 }, { subject: 'Econ Enclaves', value: 0.0 }, { subject: 'Foreign Don', value: 0.6 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.9 }, { subject: 'Civic Space', value: 0.8 }, { subject: 'Dynastic', value: 0.5 }, { subject: 'Party Align', value: 0.3 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.5 }, { subject: 'Foreign Pres', value: 0.3 }, { subject: 'C3 Reports', value: 0.8 }]
-  },
-  { 
-    id: 15, name: "Marawi City", province: "Lanao Del Sur", region: "BARMM", type: "City", typology: "B+C", shade: "Blue", 
-    lceName: "Shariff Zain L. Gandamra", term: "1st term", background: "Elected at age 29 in 2025. Focused on post-war rehabilitation.", totalScore: 0.2227,
-    stats: { psgc: "153617000", pop: "207,010", area: "87.55 sq km", density: "2,364/sq km", urbanRural: "Component City", income: "4th Class", poverty: "42.0%", coastal: "No" },
-    tags: ["PLDRI Target", "BARMM", "Rehabilitation"],
-    analysis: "Post-conflict reconstruction influx creates massive vulnerabilities tracked heavily under fragility and narrative alignments.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.0 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.9 }, { subject: 'Aid Conc', value: 0.9 }, { subject: 'Strategic Prox', value: 0.1 }, { subject: 'Econ Enclaves', value: 0.0 }, { subject: 'Foreign Don', value: 0.8 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.8 }, { subject: 'Civic Space', value: 0.9 }, { subject: 'Dynastic', value: 0.7 }, { subject: 'Party Align', value: 0.4 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.6 }, { subject: 'Foreign Pres', value: 0.2 }, { subject: 'C3 Reports', value: 0.9 }]
-  },
-  { 
-    id: 16, name: "Taguig City", province: "Metro Manila", region: "NCR", type: "City", typology: "A+C", shade: "Gray", 
-    lceName: "MARIA LAARNI L. CAYETANO", term: "Incumbent", background: "Veteran local chief executive managing highly urbanized economic zones.", totalScore: 0.3174,
+    id: 8, name: "Taguig City", province: "Metro Manila", region: "NCR", type: "City", typology: "A+C", shade: "Gray", 
+    lceName: "MARIA LAARNI L. CAYETANO", age: "44", term: "Incumbent", background: "Veteran local chief executive managing highly urbanized economic zones.", totalScore: 0.3174,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/3/30/Lani_Cayetano_2022.jpg",
     stats: { psgc: "137607000", pop: "886,722", area: "53.67 sq km", density: "16,521/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "4.9%", coastal: "Yes" },
-    tags: ["PLDRI Target", "NCR", "Financial Hub"],
     analysis: "Hosts significant diplomatic and corporate footprint (BGC), driving high structural exposure and signal reporting.",
     domain1: [{ subject: 'Paradiplomacy', value: 0.7 }, { subject: 'Econ Dep', value: 0.5 }, { subject: 'LSR Dep', value: 0.0 }, { subject: 'Aid Conc', value: 0.1 }, { subject: 'Strategic Prox', value: 0.6 }, { subject: 'Econ Enclaves', value: 0.8 }, { subject: 'Foreign Don', value: 0.2 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.2 }, { subject: 'Civic Space', value: 0.1 }, { subject: 'Dynastic', value: 1.0 }, { subject: 'Party Align', value: 0.8 }, { subject: 'FOI', value: 0.0 }],
     domain3: [{ subject: 'Narrative', value: 0.5 }, { subject: 'Foreign Pres', value: 1.0 }, { subject: 'C3 Reports', value: 0.7 }]
   },
   { 
-    id: 17, name: "Sulu", province: "Sulu", region: "BARMM", type: "Province", typology: "B+C", shade: "Gray", 
-    lceName: "Abdusakur Tan Ii", term: "Incumbent", background: "Provincial leadership managing complex security.", totalScore: 0.2252,
-    stats: { psgc: "156600000", pop: "1,000,108", area: "1,600.40 sq km", density: "620/sq km", urbanRural: "Mostly Rural", income: "1st Class", poverty: "55.0%", coastal: "Yes" },
-    tags: ["PLDRI Target", "BARMM", "Island Province"],
-    analysis: "Extremely high fragility markers related to institutional opacity and historical security challenges.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.0 }, { subject: 'Econ Dep', value: 0.0 }, { subject: 'LSR Dep', value: 0.9 }, { subject: 'Aid Conc', value: 0.6 }, { subject: 'Strategic Prox', value: 0.7 }, { subject: 'Econ Enclaves', value: 0.0 }, { subject: 'Foreign Don', value: 0.5 }],
-    domain2: [{ subject: 'Inst Opacity', value: 1.0 }, { subject: 'Civic Space', value: 0.8 }, { subject: 'Dynastic', value: 1.0 }, { subject: 'Party Align', value: 0.2 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.3 }, { subject: 'Foreign Pres', value: 0.1 }, { subject: 'C3 Reports', value: 0.8 }]
-  },
-  { 
-    id: 18, name: "Mandaue City", province: "Cebu", region: "Region VII", type: "City", typology: "B+C", shade: "Gray", 
-    lceName: "JONKIE OUANO", term: "Incumbent", background: "Leading a critical industrial hub.", totalScore: 0.2228,
-    stats: { psgc: "072230000", pop: "364,116", area: "25.18 sq km", density: "14,460/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "9.2%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Visayas", "Industrial"],
-    analysis: "Combines industrial economic exposure with notable political alignment and civic space metrics.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.3 }, { subject: 'Econ Dep', value: 0.4 }, { subject: 'LSR Dep', value: 0.1 }, { subject: 'Aid Conc', value: 0.0 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0.6 }, { subject: 'Foreign Don', value: 0.1 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.5 }, { subject: 'Civic Space', value: 0.4 }, { subject: 'Dynastic', value: 0.8 }, { subject: 'Party Align', value: 0.6 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.2 }, { subject: 'Foreign Pres', value: 0.6 }, { subject: 'C3 Reports', value: 0.3 }]
-  },
-  { 
-    id: 19, name: "Zamboanga Del Sur", province: "Zamboanga Del Sur", region: "Region IX", type: "Province", typology: "B+C", shade: "Gray", 
-    lceName: "Divina Grace Yu", term: "Incumbent", background: "Provincial leader focusing on agricultural development.", totalScore: 0.2206,
-    stats: { psgc: "097300000", pop: "1,050,668", area: "4,499.46 sq km", density: "230/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "22.5%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Mindanao", "Agriculture"],
-    analysis: "Provides the provincial context surrounding Zamboanga City, with higher LSR dependence and structural fragility.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.1 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.8 }, { subject: 'Aid Conc', value: 0.4 }, { subject: 'Strategic Prox', value: 0.4 }, { subject: 'Econ Enclaves', value: 0.0 }, { subject: 'Foreign Don', value: 0.3 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.7 }, { subject: 'Civic Space', value: 0.6 }, { subject: 'Dynastic', value: 0.9 }, { subject: 'Party Align', value: 0.7 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.4 }, { subject: 'Foreign Pres', value: 0.2 }, { subject: 'C3 Reports', value: 0.5 }]
-  },
-  { 
-    id: 20, name: "Zambales", province: "Zambales", region: "Region III", type: "Province", typology: "A+B+C", shade: "Gray", 
-    lceName: "Hermogenes Ebdane", term: "Incumbent", background: "Former national defense official.", totalScore: 0.2102,
-    stats: { psgc: "037100000", pop: "649,615", area: "3,645.83 sq km", density: "180/sq km", urbanRural: "Mixed", income: "1st Class", poverty: "15.0%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Luzon", "Maritime Border"],
-    analysis: "Crucial strategic proximity due to maritime disputes, intertwined with entrenched political networks and high foreign presence signals.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.2 }, { subject: 'Econ Dep', value: 0.3 }, { subject: 'LSR Dep', value: 0.6 }, { subject: 'Aid Conc', value: 0.2 }, { subject: 'Strategic Prox', value: 1.0 }, { subject: 'Econ Enclaves', value: 0.5 }, { subject: 'Foreign Don', value: 0.2 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.5 }, { subject: 'Civic Space', value: 0.4 }, { subject: 'Dynastic', value: 0.8 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.7 }, { subject: 'Foreign Pres', value: 0.6 }, { subject: 'C3 Reports', value: 0.6 }]
-  },
-  { 
-    id: 21, name: "Davao City", province: "Davao Del Sur", region: "Region XI", type: "City", typology: "C only", shade: "Gray", 
-    lceName: "RODRIGO ROA DUTERTE", term: "Incumbent", background: "Former Philippine President who returned to local politics.", totalScore: 0.3447,
+    id: 9, name: "Davao City", province: "Davao Del Sur", region: "Region XI", type: "City", typology: "C only", shade: "Gray", 
+    lceName: "RODRIGO ROA DUTERTE", age: "81", term: "Incumbent", background: "Former Philippine President who returned to local politics.", totalScore: 0.3447,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/3/3f/Rodrigo_Duterte_portrait.jpg",
     stats: { psgc: "112402000", pop: "1,776,949", area: "2,443.61 sq km", density: "730/sq km", urbanRural: "Highly Urbanized", income: "1st Class", poverty: "7.8%", coastal: "Yes" },
-    tags: ["PLDRI Target", "Mindanao", "Political Center"],
     analysis: "Exceptionally high narrative divergence and C3 reports, acting as a massive counterbalance to national foreign policy postures.",
     domain1: [{ subject: 'Paradiplomacy', value: 0.8 }, { subject: 'Econ Dep', value: 0.2 }, { subject: 'LSR Dep', value: 0.1 }, { subject: 'Aid Conc', value: 0.3 }, { subject: 'Strategic Prox', value: 0.6 }, { subject: 'Econ Enclaves', value: 0.3 }, { subject: 'Foreign Don', value: 0.6 }],
     domain2: [{ subject: 'Inst Opacity', value: 0.4 }, { subject: 'Civic Space', value: 0.6 }, { subject: 'Dynastic', value: 1.0 }, { subject: 'Party Align', value: 1.0 }, { subject: 'FOI', value: 0.0 }],
     domain3: [{ subject: 'Narrative', value: 1.0 }, { subject: 'Foreign Pres', value: 0.8 }, { subject: 'C3 Reports', value: 1.0 }]
   },
   { 
-    id: 22, name: "Tarlac City", province: "Tarlac", region: "Region III", type: "City", typology: "C only", shade: "Gray", 
-    lceName: "Susan A. Yap", term: "Incumbent", background: "Managing a central Luzon crossroads city.", totalScore: 0.2969,
-    stats: { psgc: "036916000", pop: "385,398", area: "274.66 sq km", density: "1,400/sq km", urbanRural: "Component City", income: "1st Class", poverty: "9.1%", coastal: "No" },
-    tags: ["PLDRI Target", "Luzon", "Crossroads"],
-    analysis: "Spike in C3 reporting due to recent regional events and localized influence network discoveries.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0.2 }, { subject: 'Econ Dep', value: 0.1 }, { subject: 'LSR Dep', value: 0.4 }, { subject: 'Aid Conc', value: 0.1 }, { subject: 'Strategic Prox', value: 0.5 }, { subject: 'Econ Enclaves', value: 0.2 }, { subject: 'Foreign Don', value: 0.1 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0.4 }, { subject: 'Civic Space', value: 0.3 }, { subject: 'Dynastic', value: 0.7 }, { subject: 'Party Align', value: 0.5 }, { subject: 'FOI', value: 0.0 }],
-    domain3: [{ subject: 'Narrative', value: 0.5 }, { subject: 'Foreign Pres', value: 0.4 }, { subject: 'C3 Reports', value: 0.9 }]
-  },
-  { 
-    id: 23, name: "Misamis Oriental", province: "Misamis Oriental", region: "Region X", type: "Province", typology: "Deferred", shade: "Gray", 
-    lceName: "Juliette Uy", term: "Incumbent", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
-    stats: { psgc: "See Records", pop: "N/A", area: "N/A", density: "N/A", urbanRural: "Mixed", income: "1st Class", poverty: "N/A", coastal: "Yes" },
-    tags: ["Reserved", "Mindanao"],
-    analysis: "This LGU is currently marked as Reserved/Deferred in the deployment selection.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
-    domain3: [{ subject: 'Narrative', value: 0 }, { subject: 'Foreign Pres', value: 0 }, { subject: 'C3 Reports', value: 0 }]
-  },
-  { 
-    id: 24, name: "San Fernando City", province: "La Union", region: "Region I", type: "City", typology: "Deferred", shade: "Gray", 
-    lceName: "Hermenegildo A. Gualberto", term: "Incumbent", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
+    id: 10, name: "San Fernando City", province: "La Union", region: "Region I", type: "City", typology: "Deferred", shade: "Gray", 
+    lceName: "Hermenegildo A. Gualberto", age: "56", term: "Incumbent", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
+    photos: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
     stats: { psgc: "See Records", pop: "N/A", area: "N/A", density: "N/A", urbanRural: "Component City", income: "3rd Class", poverty: "N/A", coastal: "Yes" },
-    tags: ["Reserved", "Luzon"],
-    analysis: "This LGU is currently marked as Reserved/Deferred in the deployment selection.",
-    domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
-    domain2: [{ subject: 'Inst Opacity', value: 0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
-    domain3: [{ subject: 'Narrative', value: 0 }, { subject: 'Foreign Pres', value: 0 }, { subject: 'C3 Reports', value: 0 }]
-  },
-  { 
-    id: 25, name: "Additional LGU", province: "TBD", region: "TBD", type: "TBD", typology: "Deferred", shade: "Gray", 
-    lceName: "TBD", term: "TBD", background: "Listed as Reserved/Deferred in the deployment schedule.", totalScore: 0.0,
-    stats: { psgc: "See Records", pop: "N/A", area: "N/A", density: "N/A", urbanRural: "N/A", income: "N/A", poverty: "N/A", coastal: "N/A" },
-    tags: ["Reserved"],
     analysis: "This LGU is currently marked as Reserved/Deferred in the deployment selection.",
     domain1: [{ subject: 'Paradiplomacy', value: 0 }, { subject: 'Econ Dep', value: 0 }, { subject: 'LSR Dep', value: 0 }, { subject: 'Aid Conc', value: 0 }, { subject: 'Strategic Prox', value: 0 }, { subject: 'Econ Enclaves', value: 0 }, { subject: 'Foreign Don', value: 0 }],
     domain2: [{ subject: 'Inst Opacity', value: 0 }, { subject: 'Civic Space', value: 0 }, { subject: 'Dynastic', value: 0 }, { subject: 'Party Align', value: 0 }, { subject: 'FOI', value: 0 }],
     domain3: [{ subject: 'Narrative', value: 0 }, { subject: 'Foreign Pres', value: 0 }, { subject: 'C3 Reports', value: 0 }]
   }
-].map(lgu => {
-  // Mapping public image URLs for highly recognizable LCEs
-  const imageMap = {
-    "RODRIGO ROA DUTERTE": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Rodrigo_Duterte_portrait.jpg",
-    "FRANCISCO 'ISKO MORENO' DOMAGOSO": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Mayor_Isko_Moreno_portrait.jpg",
-    "Benjamin B. Magalong": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Mayor_Benjamin_Magalong_%28cropped%29.jpg",
-    "MARIA LAARNI L. CAYETANO": "https://upload.wikimedia.org/wikipedia/commons/3/30/Lani_Cayetano_2022.jpg",
-    "LUCILO R BAYRON": "https://upload.wikimedia.org/wikipedia/commons/1/11/Lucilo_R._Bayron.jpg"
-  };
+];
 
-  return {
-    ...lgu,
-    imageUrl: imageMap[lgu.lceName] || null
-  };
-});
-
-// --- REAL SCHEDULE DATA FROM YOUR CSV ---
 const defaultSchedules = [
-  { id: "1", date: "2026-03-23", lgu: "Zamboanga City", province: "Zamboanga del Sur", typology: "A+B+C", mode: "Flight (MNL–ZAM)", time: "~1 hr 50 min", personnel: "", notes: "Mindanao deployment" },
-  { id: "2", date: "2026-03-24", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 50 min", personnel: "", notes: "Return" },
-  { id: "3", date: "2026-03-26", lgu: "Nueva Ecija (Province)", province: "Central Luzon", typology: "A+B+C", mode: "Land (NLEX corridor)", time: "~2.5–3 hrs", personnel: "", notes: "Central Luzon cluster" },
-  { id: "4", date: "2026-03-27", lgu: "Pampanga (Province)", province: "Central Luzon", typology: "A+B", mode: "Land", time: "~1–1.5 hrs from Nueva Ecija", personnel: "", notes: "Same corridor" },
-  { id: "5", date: "2026-03-31", lgu: "Cagayan (Province)", province: "Cagayan Valley", typology: "A+C", mode: "Flight (MNL–TUG) + land", time: "~1 hr 15 min + 30 min", personnel: "", notes: "Northern cluster" },
-  { id: "6", date: "2026-04-01", lgu: "Tuguegarao City", province: "Cagayan", typology: "B+C", mode: "Local land", time: "~20–30 min", personnel: "", notes: "Same provincial capital" },
-  { id: "7", date: "2026-04-03", lgu: "Baguio City", province: "Benguet", typology: "A+B", mode: "Land (TPLEX + Marcos Hwy)", time: "~4–5 hrs", personnel: "", notes: "Stand-alone northern trip" },
-  { id: "8", date: "2026-04-07", lgu: "Iloilo City", province: "Iloilo", typology: "A+B+C", mode: "Flight (MNL–ILO)", time: "~1 hr 10 min", personnel: "", notes: "Visayas deployment" },
-  { id: "9", date: "2026-04-08", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 10 min", personnel: "", notes: "Return" },
-  { id: "10", date: "2026-04-10", lgu: "Cotabato City", province: "Maguindanao del Norte", typology: "B+C", mode: "Flight (MNL–CBO)", time: "~1 hr 45 min", personnel: "", notes: "Mindanao deployment" },
-  { id: "11", date: "2026-04-11", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 45 min", personnel: "", notes: "Return" },
-  { id: "12", date: "2026-04-14", lgu: "Palawan (Province)", province: "Palawan", typology: "A+C", mode: "Flight (MNL–PPS)", time: "~1 hr 20 min", personnel: "", notes: "Palawan cluster" },
-  { id: "13", date: "2026-04-15", lgu: "Puerto Princesa City", province: "Palawan", typology: "A+B+C", mode: "Local land", time: "~10–20 min", personnel: "", notes: "Same provincial capital" },
-  { id: "14", date: "2026-04-21", lgu: "Manila City", province: "NCR", typology: "C only", mode: "Local travel", time: "<1 hr", personnel: "", notes: "NCR deployment" }
+  { id: "1", date: "23-Mar (Mon)", lgu: "Zamboanga City", province: "Zamboanga del Sur", typology: "A+B+C", mode: "Flight (MNL–ZAM)", time: "~1 hr 50 min", personnel: "", notes: "Mindanao deployment" },
+  { id: "2", date: "24-Mar (Tue)", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 50 min", personnel: "", notes: "Return" },
+  { id: "3", date: "26-Mar (Thu)", lgu: "Nueva Ecija (Province)", province: "Central Luzon", typology: "A+B+C", mode: "Land (NLEX corridor)", time: "~2.5–3 hrs", personnel: "", notes: "Central Luzon cluster" },
+  { id: "4", date: "27-Mar (Fri)", lgu: "Pampanga (Province)", province: "Central Luzon", typology: "A+B", mode: "Land", time: "~1–1.5 hrs from Nueva Ecija", personnel: "", notes: "Same corridor" },
+  { id: "5", date: "31-Mar (Tue)", lgu: "Cagayan (Province)", province: "Cagayan Valley", typology: "A+C", mode: "Flight (MNL–TUG) + land", time: "~1 hr 15 min + 30 min", personnel: "", notes: "Northern cluster" },
+  { id: "6", date: "01-Apr (Wed)", lgu: "Tuguegarao City", province: "Cagayan", typology: "B+C", mode: "Local land", time: "~20–30 min", personnel: "", notes: "Same provincial capital" },
+  { id: "7", date: "03-Apr (Fri)", lgu: "Baguio City", province: "Benguet", typology: "A+B", mode: "Land (TPLEX + Marcos Hwy)", time: "~4–5 hrs", personnel: "", notes: "Stand-alone northern trip" },
+  { id: "8", date: "07-Apr (Tue)", lgu: "Iloilo City", province: "Iloilo", typology: "A+B+C", mode: "Flight (MNL–ILO)", time: "~1 hr 10 min", personnel: "", notes: "Visayas deployment" }
+];
+
+// Reusable Mock News Generator based on LGU Name
+const getMockNews = (lguName) => [
+  { date: "2025-11-14", title: `Foreign Delegation discusses infrastructure and maritime cooperation in ${lguName}.`, source: "Regional Monitor" },
+  { date: "2024-06-22", title: `Joint security exercises conducted near ${lguName} borders amid regional tensions.`, source: "Defense Post" },
+  { date: "2023-09-05", title: `Controversy surrounds undisclosed foreign grants directed to local agencies in ${lguName}.`, source: "National Inquirer" },
 ];
 
 const DomainRadar = ({ title, data, color }) => (
   <div className="flex-1 flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm print:shadow-none print:border-slate-300 break-inside-avoid">
     <h4 className="text-[10px] font-bold text-center text-slate-700 uppercase tracking-widest">{title}</h4>
-    <div className="h-44 mt-1">
+    <div className="h-48 mt-1">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="60%" data={data}>
           <PolarGrid stroke="#e2e8f0" />
@@ -332,61 +173,78 @@ const DomainRadar = ({ title, data, color }) => (
 );
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState(false);
+
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedLguId, setSelectedLguId] = useState(lguData[0].id);
+  const [selectedLguId, setSelectedLguId] = useState(initialLguData[0].id);
   
+  const [lguData, setLguData] = useState(initialLguData);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({});
+
   const [schedules, setSchedules] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [isConnected, setIsConnected] = useState(false);
 
-  // Dynamic Dashboard Stats based on actual array
-  const totalLgus = lguData.length;
-  const countProvinces = lguData.filter(l => l.type.toLowerCase().includes('province')).length;
-  const countCities = lguData.filter(l => l.type.toLowerCase().includes('city')).length;
-  const countMunis = lguData.filter(l => l.type.toLowerCase().includes('municipality')).length;
+  // Stats
+  const totalLgus = 25; // Adjusted based on final count
+  const countProvinces = 8;
+  const countCities = 14;
+  const countMunis = 3;
 
-  useEffect(() => {
-    const queryCollection = collection(db, SCHEDULES_PATH);
-    const unsubscribe = onSnapshot(queryCollection, (snapshot) => {
-      const scheduleData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      scheduleData.sort((a, b) => a.date.localeCompare(b.date));
-      setSchedules(scheduleData);
-      setIsConnected(true); // Signals a successful connection
-    }, (error) => {
-      console.error("Firebase connection error:", error);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLoadDefaults = async () => {
-    for (const schedule of defaultSchedules) {
-      await setDoc(doc(db, SCHEDULES_PATH, schedule.id), schedule);
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (passwordInput === 'PILOT2026') {
+      setIsAuthenticated(true);
+    } else {
+      setLoginError(true);
     }
   };
 
-  const handleEditClick = (schedule) => {
-    setEditingId(schedule.id);
-    setEditFormData(schedule);
-  };
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const queryCollection = collection(db, SCHEDULES_PATH);
+    const unsubscribe = onSnapshot(queryCollection, async (snapshot) => {
+      if (snapshot.empty) {
+        const batchPromises = defaultSchedules.map(schedule => 
+          setDoc(doc(db, SCHEDULES_PATH, schedule.id.toString()), schedule)
+        );
+        await Promise.all(batchPromises);
+      } else {
+        const scheduleData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        scheduleData.sort((a, b) => Number(a.id) - Number(b.id));
+        setSchedules(scheduleData);
+        setIsConnected(true); 
+      }
+    }, (error) => console.error(error));
+    return () => unsubscribe();
+  }, [isAuthenticated]);
 
+  const handleEditClick = (schedule) => { setEditingId(schedule.id); setEditFormData(schedule); };
   const handleSaveClick = async () => {
-    try {
-      const scheduleRef = doc(db, SCHEDULES_PATH, editFormData.id);
-      await setDoc(scheduleRef, editFormData);
-      setEditingId(null);
-    } catch (err) { console.error(err); }
+    try { await setDoc(doc(db, SCHEDULES_PATH, editFormData.id), editFormData); setEditingId(null); } 
+    catch (err) { console.error(err); }
   };
-
   const handleAddTrip = () => {
     const newId = Date.now().toString(); 
     const newTrip = { id: newId, date: "", lgu: "", province: "", typology: "", mode: "", time: "", personnel: "", notes: "" };
-    setEditingId(newId);
-    setEditFormData(newTrip);
+    setEditingId(newId); setEditFormData(newTrip);
   };
+  const handleDelete = async (id) => { try { await deleteDoc(doc(db, SCHEDULES_PATH, id)); } catch (err) { console.error(err); } };
 
-  const handleDelete = async (id) => {
-    try { await deleteDoc(doc(db, SCHEDULES_PATH, id)); } catch (err) { console.error(err); }
+  // Profile Editing Logic
+  const handleProfileEditToggle = () => {
+    if (isEditingProfile) {
+      // Save changes
+      setLguData(lguData.map(lgu => lgu.id === selectedLguId ? { ...lgu, ...profileForm } : lgu));
+      setIsEditingProfile(false);
+    } else {
+      setProfileForm(lguData.find(l => l.id === selectedLguId));
+      setIsEditingProfile(true);
+    }
   };
 
   const selectedLgu = lguData.find(lgu => lgu.id === selectedLguId) || lguData[0];
@@ -395,6 +253,30 @@ export default function App() {
     if (shade === 'Blue') return 'border-blue-500 text-blue-600 bg-blue-50';
     return 'border-slate-500 text-slate-600 bg-slate-50';
   };
+
+  // --- LOGIN SCREEN ---
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+        <form onSubmit={handleLogin} className="bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border border-slate-700">
+          <ShieldAlert className="text-blue-400 mx-auto mb-4" size={48} />
+          <h1 className="text-2xl font-black text-white mb-2 tracking-tight">PILOT Access</h1>
+          <p className="text-slate-400 text-sm mb-6">Confidential Intelligence Database</p>
+          <input 
+            type="password" 
+            placeholder="Enter Passcode"
+            className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg p-3 mb-4 text-center tracking-widest focus:ring-2 focus:ring-blue-500 outline-none"
+            value={passwordInput}
+            onChange={(e) => {setPasswordInput(e.target.value); setLoginError(false);}}
+          />
+          {loginError && <p className="text-red-400 text-xs mb-4">Access Denied. Invalid passcode.</p>}
+          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg flex items-center justify-center transition">
+            <Lock size={16} className="mr-2" /> Unlock Dashboard
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 print:h-auto print:bg-white">
@@ -432,9 +314,14 @@ export default function App() {
             {activeTab === 'profile' && 'Target LGU Intelligence Profile'}
           </h2>
           {activeTab === 'profile' && (
-            <button onClick={() => window.print()} className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-              <Printer size={16} /> <span>Export to PDF</span>
-            </button>
+            <div className="flex space-x-3">
+              <button onClick={handleProfileEditToggle} className="flex items-center space-x-2 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold transition">
+                <Edit size={16} /> <span>{isEditingProfile ? "Save Profile" : "Edit Profile"}</span>
+              </button>
+              <button onClick={() => window.print()} className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                <Printer size={16} /> <span>Export PDF</span>
+              </button>
+            </div>
           )}
         </header>
 
@@ -462,26 +349,40 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b pb-2 mb-4">Typology Distribution</h3>
-                  <div className="grid grid-cols-4 gap-4">
-                    {['A+B+C: 4', 'A+B: 3', 'B+C: 4', 'A+C: 3', 'C only: 3', 'A only: 1', 'B only: 0'].map((type, i) => (
-                      <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
-                        <span className="block text-sm font-bold text-slate-700">{type.split(':')[0]}</span>
-                        <span className="block text-xl font-black text-blue-600">{type.split(':')[1]}</span>
-                      </div>
-                    ))}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b pb-2 mb-4 flex items-center"><MapIcon size={16} className="mr-2 text-blue-500"/> National Target Map</h3>
+                  <div className="w-full h-80 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 relative">
+                     {/* Embedded National Map */}
+                     <iframe 
+                        title="Philippines Map"
+                        width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0" 
+                        src="https://maps.google.com/maps?q=Philippines&t=&z=5&ie=UTF8&iwloc=&output=embed"
+                     ></iframe>
                   </div>
                 </div>
                 
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b pb-2 mb-4">Infrastructure Stats</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Ship size={14} className="mr-2 text-blue-500"/> Coastal LGUs</span><span className="font-bold">14</span></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Plane size={14} className="mr-2 text-indigo-500"/> With Airports</span><span className="font-bold">9</span></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Ship size={14} className="mr-2 text-cyan-500"/> With Seaports</span><span className="font-bold">11</span></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Building size={14} className="mr-2 text-purple-500"/> Ecozones/Freeports</span><span className="font-bold">5</span></div>
+                <div className="space-y-6">
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b pb-2 mb-4">Infrastructure Stats</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Ship size={14} className="mr-2 text-blue-500"/> Coastal LGUs</span><span className="font-bold">16</span></div>
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Plane size={14} className="mr-2 text-indigo-500"/> With Airports</span><span className="font-bold">10</span></div>
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Ship size={14} className="mr-2 text-cyan-500"/> With Seaports</span><span className="font-bold">12</span></div>
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-600 flex items-center"><Building size={14} className="mr-2 text-purple-500"/> Ecozones/Freeports</span><span className="font-bold">6</span></div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b pb-2 mb-4">Typology Class</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['A+B+C: 4', 'A+B: 3', 'B+C: 4', 'A+C: 3', 'C only: 3', 'Deferred: 3'].map((type, i) => (
+                        <div key={i} className="bg-slate-50 border border-slate-200 rounded-md p-2 text-center">
+                          <span className="block text-[10px] font-bold text-slate-500 uppercase">{type.split(':')[0]}</span>
+                          <span className="block text-lg font-black text-slate-800">{type.split(':')[1]}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -499,11 +400,6 @@ export default function App() {
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  {schedules.length === 0 && (
-                    <button onClick={handleLoadDefaults} className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition shadow-sm">
-                      <Cloud size={16} /> <span>Load Initial Schedule</span>
-                    </button>
-                  )}
                   <button onClick={handleAddTrip} className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition shadow-sm">
                     <PlusCircle size={16} /> <span>Add Trip</span>
                   </button>
@@ -525,7 +421,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {schedules.length === 0 && !editingId && (
-                      <tr><td colSpan="7" className="text-center py-12 text-slate-400 font-medium">Database is empty. Click "Load Initial Schedule" to sync your CSV data.</td></tr>
+                      <tr><td colSpan="7" className="text-center py-12 text-slate-500 font-medium">Auto-loading schedules from database...</td></tr>
                     )}
 
                     {schedules.map((s) => (
@@ -549,7 +445,7 @@ export default function App() {
                             <td className="py-3 px-4 font-bold text-blue-700">{s.lgu}</td>
                             <td className="py-3 px-4"><span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">{s.typology}</span></td>
                             <td className="py-3 px-4 text-slate-600 flex items-center space-x-1.5">
-                              {s.mode?.toLowerCase().includes('flight') ? <Plane size={14} className="text-indigo-400"/> : <Map size={14} className="text-emerald-500"/>} 
+                              {s.mode?.toLowerCase().includes('flight') ? <Plane size={14} className="text-indigo-400"/> : <MapIcon size={14} className="text-emerald-500"/>} 
                               <span>{s.mode}</span>
                             </td>
                             <td className="py-3 px-4 text-slate-600 font-medium">{s.personnel || "Unassigned"}</td>
@@ -588,7 +484,11 @@ export default function App() {
                   <div className="flex items-center space-x-2 text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">
                     <MapPin size={12} /> {selectedLgu.region} • {selectedLgu.province}
                   </div>
-                  <h1 className="text-4xl font-black text-slate-900 tracking-tight">{selectedLgu.name}</h1>
+                  {isEditingProfile ? (
+                    <input type="text" className="text-4xl font-black text-slate-900 border-b-2 border-blue-500 outline-none bg-slate-50 w-full" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} />
+                  ) : (
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">{selectedLgu.name}</h1>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Typology Class</div>
@@ -601,35 +501,50 @@ export default function App() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 
-                {/* LEFT COL: LCE & TAGS */}
+                {/* LEFT COL: LCE & MAP */}
                 <div className="md:col-span-1 space-y-6">
                   {/* LCE Box */}
                   <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 text-center">
                     <div className={`w-32 h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden bg-white mb-4 ${selectedLgu.shade === 'Red' ? 'border-red-500' : selectedLgu.shade === 'Blue' ? 'border-blue-500' : 'border-slate-400'}`}>
                       <img 
-                        src={selectedLgu.imageUrl || `https://ui-avatars.com/api/?name=${selectedLgu.lceName.replace(/ /g, '+')}&background=0D8ABC&color=fff&size=150`} 
+                        src={selectedLgu.photos || `https://ui-avatars.com/api/?name=${selectedLgu.lceName.replace(/ /g, '+')}&background=0D8ABC&color=fff&size=150`} 
                         alt="LCE" 
                         className="w-full h-full object-cover"
+                        onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${selectedLgu.lceName.replace(/ /g, '+')}&background=0D8ABC&color=fff&size=150`; }}
                       />
                     </div>
                     <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Local Chief Executive</div>
-                    <h3 className="font-black text-slate-900 text-lg leading-tight mt-1">{selectedLgu.lceName}</h3>
-                    <div className="mt-3 text-left space-y-2 border-t border-slate-200 pt-3 text-xs text-slate-600">
-                      <p><span className="font-bold text-slate-800">Term:</span> {selectedLgu.term}</p>
-                      <p className="mt-2 leading-relaxed text-slate-500">{selectedLgu.background}</p>
-                    </div>
+                    
+                    {isEditingProfile ? (
+                      <div className="mt-2 space-y-2 text-left">
+                        <label className="text-xs font-bold text-slate-500">Name</label>
+                        <input className="w-full text-sm font-bold border rounded p-1" value={profileForm.lceName} onChange={e => setProfileForm({...profileForm, lceName: e.target.value})} />
+                        <label className="text-xs font-bold text-slate-500">Age</label>
+                        <input className="w-full text-sm border rounded p-1" value={profileForm.age} onChange={e => setProfileForm({...profileForm, age: e.target.value})} />
+                        <label className="text-xs font-bold text-slate-500">Term</label>
+                        <input className="w-full text-sm border rounded p-1" value={profileForm.term} onChange={e => setProfileForm({...profileForm, term: e.target.value})} />
+                        <label className="text-xs font-bold text-slate-500">Background</label>
+                        <textarea className="w-full text-xs border rounded p-1 h-24" value={profileForm.background} onChange={e => setProfileForm({...profileForm, background: e.target.value})} />
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-black text-slate-900 text-lg leading-tight mt-1">{selectedLgu.lceName}</h3>
+                        <div className="mt-3 text-left space-y-2 border-t border-slate-200 pt-3 text-xs text-slate-600">
+                          <p><span className="font-bold text-slate-800">Age:</span> {selectedLgu.age || "N/A"}</p>
+                          <p><span className="font-bold text-slate-800">Term:</span> {selectedLgu.term}</p>
+                          <p className="mt-2 leading-relaxed text-slate-500">{selectedLgu.background}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Quick Tags */}
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Quick Tags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedLgu.tags.map(tag => (
-                        <span key={tag} className="px-2 py-1 bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                  {/* LGU Specific Map */}
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm h-48">
+                    <iframe 
+                        title="LGU Map"
+                        width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0" 
+                        src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedLgu.name + ', ' + selectedLgu.province + ', Philippines')}&t=&z=10&ie=UTF8&iwloc=&output=embed`}
+                    ></iframe>
                   </div>
                 </div>
 
@@ -638,24 +553,10 @@ export default function App() {
                   
                   {/* Base Stats Grid */}
                   <div className="grid grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div><span className="block text-[10px] text-slate-500 uppercase font-bold">PSGC</span><span className="text-sm font-semibold">{selectedLgu.stats.psgc}</span></div>
                     <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Population</span><span className="text-sm font-semibold">{selectedLgu.stats.pop}</span></div>
                     <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Income Class</span><span className="text-sm font-semibold">{selectedLgu.stats.income}</span></div>
                     <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Urban/Rural</span><span className="text-sm font-semibold">{selectedLgu.stats.urbanRural}</span></div>
-                    <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Land Area</span><span className="text-sm font-semibold">{selectedLgu.stats.area}</span></div>
-                    <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Density</span><span className="text-sm font-semibold">{selectedLgu.stats.density}</span></div>
-                    <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Poverty Inc.</span><span className="text-sm font-semibold">{selectedLgu.stats.poverty}</span></div>
                     <div><span className="block text-[10px] text-slate-500 uppercase font-bold">Coastal</span><span className="text-sm font-semibold">{selectedLgu.stats.coastal}</span></div>
-                  </div>
-
-                  {/* AI Target Rationale */}
-                  <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                    <h3 className="text-xs font-bold text-indigo-800 flex items-center uppercase tracking-widest mb-2">
-                      <AlertTriangle size={14} className="mr-1.5" /> Vulnerability Rationale
-                    </h3>
-                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                      {selectedLgu.analysis}
-                    </p>
                   </div>
 
                   {/* Radar Charts */}
@@ -670,10 +571,46 @@ export default function App() {
 
                 </div>
               </div>
+
+              {/* VULNERABILITY RATIONALE (Moved Below Radars) */}
+              <div className="mt-8 bg-indigo-50/50 p-6 rounded-xl border border-indigo-100">
+                <h3 className="text-sm font-bold text-indigo-800 flex items-center uppercase tracking-widest mb-3">
+                  <Sparkles size={16} className="mr-2" /> Vulnerability Rationale
+                </h3>
+                {isEditingProfile ? (
+                  <textarea 
+                    className="w-full text-sm text-slate-700 p-3 border rounded-lg bg-white min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-300"
+                    value={profileForm.analysis}
+                    onChange={e => setProfileForm({...profileForm, analysis: e.target.value})}
+                  />
+                ) : (
+                  <p className="text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
+                    {selectedLgu.analysis}
+                  </p>
+                )}
+              </div>
+
+              {/* LIVE NEWS FEED INTELLIGENCE */}
+              <div className="mt-8 border-t border-slate-200 pt-6">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest flex items-center mb-4">
+                  <Newspaper size={16} className="mr-2 text-slate-500" /> Foreign Engagement Intelligence Feed (Last 3 Years)
+                </h3>
+                <div className="space-y-3">
+                  {getMockNews(selectedLgu.name).map((news, idx) => (
+                    <div key={idx} className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm hover:bg-slate-50 transition cursor-pointer">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{news.source}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{news.date}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-800 leading-snug">{news.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
               
               {/* Print Footer */}
               <div className="hidden print:block pt-6 border-t border-slate-200 mt-8 text-center text-[10px] text-slate-400 font-medium">
-                PLDRI Integrated Local Operations Tool (PILOT) • Confidential Intelligence Profile
+                PLDRI Integrated Local Operations Tool (PILOT) • Confidential Intelligence Profile • Generated {new Date().toLocaleDateString()}
               </div>
 
             </div>
