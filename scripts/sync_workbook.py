@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_JSON = WORKSPACE_ROOT / "src" / "data" / "pilotData.json"
+PUBLIC_OUTPUT_JSON = WORKSPACE_ROOT / "public" / "data" / "pilotData.json"
 OUTPUT_PHOTO_DIR = WORKSPACE_ROOT / "public" / "workbook-photos"
 DEFAULT_WORKBOOK_GLOB = "LGU Schedules and Profiles for PLDI KII*.xlsx"
 
@@ -561,11 +562,17 @@ def main():
         "allNews": all_news,
     }
 
+    output_text = json.dumps(output, indent=2, ensure_ascii=True) + "\n"
+
     OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_JSON.write_text(json.dumps(output, indent=2, ensure_ascii=True) + "\n")
+    OUTPUT_JSON.write_text(output_text)
+
+    PUBLIC_OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
+    PUBLIC_OUTPUT_JSON.write_text(output_text)
 
     print(f"Synced workbook: {workbook_path}")
     print(f"Wrote data: {OUTPUT_JSON}")
+    print(f"Wrote public data: {PUBLIC_OUTPUT_JSON}")
     print(f"Exported photos: {OUTPUT_PHOTO_DIR}")
 
 
