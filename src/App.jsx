@@ -52,6 +52,12 @@ const RADAR_COLORS = {
   C: '#be123c',
 };
 
+const RADAR_PANEL_CLASSES = {
+  A: 'bg-[linear-gradient(180deg,#ffffff_0%,#f2fbf9_100%)]',
+  B: 'bg-[linear-gradient(180deg,#ffffff_0%,#fff7f1_100%)]',
+  C: 'bg-[linear-gradient(180deg,#ffffff_0%,#fff4f7_100%)]',
+};
+
 const DETAIL_FIELDS = [
   { key: 'population', label: 'Population' },
   { key: 'landAreaSqKm', label: 'Land area (sq km)' },
@@ -196,7 +202,7 @@ function RadarPanel({ title, domain, profile }) {
     <Card
       title={title}
       subtitle={`${DOMAIN_LABELS[domain]} • ${percentLabel(profile?.domainScores?.[domain])}`}
-      className="h-full"
+      className={`h-full ${RADAR_PANEL_CLASSES[domain]}`}
     >
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -309,17 +315,69 @@ function SourceLinkCard({ item }) {
       href={item.url}
       target="_blank"
       rel="noreferrer"
-      className="block rounded-[18px] border border-slate-200 bg-white p-4 transition hover:border-slate-300"
+      className="block rounded-[20px] border border-[#d7e2ef] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4 transition hover:border-[#b9cbdf]"
     >
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-        {textOrDash(item.dateLabel)}
-      </p>
-      <p className="mt-2 text-sm leading-6 text-slate-800">{item.title}</p>
-      <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
+          {textOrDash(item.dateLabel)}
+        </p>
+        <span className="rounded-full border border-[#d7e2ef] bg-white px-3 py-1 text-[11px] font-medium text-[#0f4b9a]">
+          Source
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-800">{item.title}</p>
+      <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
         <ExternalLink size={14} />
         <span>{item.sourceLabel || 'Open source'}</span>
       </div>
     </a>
+  );
+}
+
+function BriefingPill({ label, value }) {
+  return (
+    <div className="rounded-[18px] border border-[#d7e2ef] bg-white px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-2 text-sm font-medium text-slate-900">{textOrDash(value)}</p>
+    </div>
+  );
+}
+
+function QuestionCard({ index, item }) {
+  return (
+    <div className="flex gap-4 rounded-[20px] border border-[#d7e2ef] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0f4b9a] text-sm font-semibold text-white">
+        {index}
+      </div>
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium text-slate-900">{item.label}</p>
+          <span className="rounded-full bg-[#edf4ff] px-2.5 py-1 text-[11px] font-medium text-[#0f4b9a]">
+            {percentLabel(item.value)}
+          </span>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-700">{item.prompt}</p>
+      </div>
+    </div>
+  );
+}
+
+function PrioritySignalCard({ item }) {
+  return (
+    <div className="rounded-[20px] border border-[#d7e2ef] bg-white px-4 py-4">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm font-medium text-slate-900">{item.label}</p>
+        <span className="rounded-full bg-[#edf4ff] px-2.5 py-1 text-[11px] font-medium text-[#0f4b9a]">
+          {percentLabel(item.value)}
+        </span>
+      </div>
+      <div className="mt-3 h-2.5 rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-[linear-gradient(90deg,#0f4b9a_0%,#4c8fe0_100%)]"
+          style={{ width: `${Math.max(8, Math.round((item.value || 0) * 100))}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -395,6 +453,7 @@ function MainApp() {
         (trip) => trip.lgu === selectedProfile.name,
       )
     : [];
+  const prioritySignals = selectedProfile ? topPrompts(selectedProfile) : [];
 
   const currentSchedule = scheduleBucket === 'primary' ? appData.schedules?.primary || [] : appData.schedules?.reserve || [];
   const typologyCounts = TYPOLOGY_ORDER.map((typology) => ({
@@ -496,10 +555,10 @@ function MainApp() {
         {!orderedProfiles.length ? (
           <Card
             title="Loading data"
-            subtitle="If this takes too long, the live Google Sheet route may not be configured yet."
+            subtitle="If this takes too long, the live data source may not be configured yet."
           >
             <p className="text-sm leading-7 text-slate-600">
-              The dashboard is waiting for either the live Google Sheet feed or the local backup snapshot.
+              The dashboard is waiting for the live data feed or the local backup snapshot.
             </p>
           </Card>
         ) : null}
@@ -509,7 +568,7 @@ function MainApp() {
             <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
               <Card
                 title="LGU order"
-                subtitle="Profiles are arranged by the order column from the sheet."
+                subtitle="Profiles are arranged by the current order setting."
                 className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
               >
                 <div className="grid gap-3">
@@ -543,7 +602,7 @@ function MainApp() {
               <div className="grid gap-6">
                 <Card
                   title="Typology distribution"
-                  subtitle="Shown in the typology order from the sheet."
+                  subtitle="Shown in the current typology order."
                   className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
                 >
                   <div className="grid gap-3">
@@ -567,7 +626,7 @@ function MainApp() {
 
                 <Card
                   title="Upcoming field plan"
-                  subtitle="Current schedule rows from the sheet."
+                  subtitle="Current schedule entries."
                   className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
                 >
                   <div className="space-y-3">
@@ -594,7 +653,7 @@ function MainApp() {
           <div className="space-y-6">
             <Card
               title="Field Plan"
-              subtitle="Primary and reserve rows from the planning sheet."
+              subtitle="Primary and reserve planning entries."
               action={
                 <div className="flex gap-2">
                   <FilterButton
@@ -662,91 +721,141 @@ function MainApp() {
             </aside>
 
             <div className="space-y-6">
-              <Card className="overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)]">
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-                  <div className="space-y-5">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-medium ${typologyClasses(
-                          selectedProfile.typology,
-                        )}`}
-                      >
-                        {selectedProfile.typology}
-                      </span>
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                        Score {formatScore(selectedProfile.totalScore)}
-                      </span>
-                    </div>
+              <Card className="overflow-hidden p-0">
+                <div className="profile-banner px-6 py-7 text-white print:border-b print:border-[#d7e2ef] print:!bg-white print:!text-slate-900 lg:px-8 lg:py-8">
+                  <div className="relative z-10 grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+                    <div className="space-y-5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-medium print:border-slate-200 print:bg-slate-100 print:text-slate-700 ${typologyClasses(
+                            selectedProfile.typology,
+                          )}`}
+                        >
+                          {selectedProfile.typology}
+                        </span>
+                        <span className="rounded-full border border-white/18 bg-white/12 px-3 py-1 text-xs font-medium text-white print:border-slate-200 print:bg-slate-100 print:text-slate-700">
+                          Score {formatScore(selectedProfile.totalScore)}
+                        </span>
+                      </div>
 
-                    <div>
-                      <h2 className="text-4xl font-semibold tracking-tight text-slate-950">
-                        {selectedProfile.name}
-                      </h2>
-                      <p className="mt-2 text-base text-slate-500">
-                        {selectedProfile.region} • {selectedProfile.province}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                      <div className="rounded-[18px] bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">LCE</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{textOrDash(selectedProfile.lceName)}</p>
-                      </div>
-                      <div className="rounded-[18px] bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">LGU type</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{textOrDash(selectedProfile.type)}</p>
-                      </div>
-                      <div className="rounded-[18px] bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Income class</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{textOrDash(selectedProfile.incomeClass)}</p>
-                      </div>
-                      <div className="rounded-[18px] bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Term / age</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">
-                          {textOrDash(selectedProfile.term)} • {textOrDash(selectedProfile.age)}
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-white/65 print:text-slate-500">
+                          LGU briefing
+                        </p>
+                        <h2 className="mt-3 text-4xl font-semibold tracking-tight print:text-slate-900 lg:text-[2.8rem]">
+                          {selectedProfile.name}
+                        </h2>
+                        <p className="mt-3 max-w-2xl text-base leading-7 text-blue-50/88 print:text-slate-600">
+                          {selectedProfile.region} • {selectedProfile.province}
                         </p>
                       </div>
+
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-[18px] border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-white/60 print:text-slate-500">LCE</p>
+                          <p className="mt-2 text-sm font-medium text-white print:text-slate-900">
+                            {textOrDash(selectedProfile.lceName)}
+                          </p>
+                        </div>
+                        <div className="rounded-[18px] border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-white/60 print:text-slate-500">LGU type</p>
+                          <p className="mt-2 text-sm font-medium text-white print:text-slate-900">
+                            {textOrDash(selectedProfile.type)}
+                          </p>
+                        </div>
+                        <div className="rounded-[18px] border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-white/60 print:text-slate-500">Income class</p>
+                          <p className="mt-2 text-sm font-medium text-white print:text-slate-900">
+                            {textOrDash(selectedProfile.incomeClass)}
+                          </p>
+                        </div>
+                        <div className="rounded-[18px] border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-white/60 print:text-slate-500">Term / age</p>
+                          <p className="mt-2 text-sm font-medium text-white print:text-slate-900">
+                            {textOrDash(selectedProfile.term)} • {textOrDash(selectedProfile.age)}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="rounded-[20px] bg-[#f4f8fc] p-5">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Background</p>
+                    <div className="grid gap-4">
+                      <div className="overflow-hidden rounded-[24px] border border-white/14 bg-white/10 backdrop-blur-sm print:border-[#d7e2ef] print:bg-slate-50">
+                        {selectedProfile.imageUrl ? (
+                          <img
+                            src={selectedProfile.imageUrl}
+                            alt={selectedProfile.lceName}
+                            className="h-72 w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-72 items-center justify-center bg-white/10 text-white/70">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 p-6 lg:p-8 xl:grid-cols-[1.1fr_0.9fr]">
+                  <div className="space-y-5">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <BriefingPill label="Population" value={selectedProfile.population} />
+                      <BriefingPill label="GDP per capita" value={selectedProfile.gdpPerCapita} />
+                      <BriefingPill label="Port / airport" value={selectedProfile.portAirportPresence} />
+                      <BriefingPill label="Coastal status" value={selectedProfile.coastalClassification} />
+                    </div>
+
+                    <div className="rounded-[22px] border border-[#d7e2ef] bg-[#f7fbff] p-5">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                        Executive background
+                      </p>
                       <p className="mt-3 text-sm leading-7 text-slate-700">
                         {textOrDash(selectedProfile.background)}
                       </p>
                     </div>
+
+                    <div className="rounded-[22px] border border-[#d7e2ef] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                            Research priorities
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            The highest-scoring indicators for this profile.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid gap-3">
+                        {prioritySignals.map((item) => (
+                          <PrioritySignalCard key={item.key} item={item} />
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-5">
-                    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-slate-50">
-                      {selectedProfile.imageUrl ? (
-                        <img
-                          src={selectedProfile.imageUrl}
-                          alt={selectedProfile.lceName}
-                          className="h-72 w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-72 items-center justify-center bg-slate-100 text-slate-400">
-                          No image
-                        </div>
-                      )}
+                  <div className="overflow-hidden rounded-[24px] border border-[#d7e2ef] bg-white print-hide">
+                    <div className="border-b border-[#d7e2ef] px-5 py-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                        LGU map
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        Satellite context for the selected local government unit.
+                      </p>
                     </div>
-
-                    <div className="overflow-hidden rounded-[22px] border border-slate-200 print-hide">
-                      <iframe
-                        title={`${selectedProfile.name} map`}
-                        src={profileMapUrl(selectedProfile)}
-                        className="h-72 w-full"
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                      />
-                    </div>
+                    <iframe
+                      title={`${selectedProfile.name} map`}
+                      src={profileMapUrl(selectedProfile)}
+                      className="h-[30rem] w-full"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
                   </div>
                 </div>
               </Card>
 
               <Card
                 title="Context indicators"
-                subtitle="Socio-economic and structural context from the sheet."
+                subtitle="Socio-economic and structural context."
                 className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
               >
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -796,33 +905,34 @@ function MainApp() {
                   className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
                 >
                   <div className="space-y-3">
-                    {topPrompts(selectedProfile).map((item) => (
-                      <div key={item.key} className="rounded-[18px] bg-slate-50 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-medium text-slate-900">{item.label}</p>
-                          <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-                            {percentLabel(item.value)}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-slate-700">{item.prompt}</p>
-                      </div>
+                    {topPrompts(selectedProfile).map((item, index) => (
+                      <QuestionCard key={item.key} item={item} index={index + 1} />
                     ))}
                   </div>
                 </Card>
               </div>
 
               <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-                <Card title="Foreign engagement analysis">
+                <Card
+                  title="Foreign engagement analysis"
+                  className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+                >
                   <p className="whitespace-pre-line text-sm leading-7 text-slate-700">
                     {textOrDash(selectedProfile.engagementAnalysis)}
                   </p>
                 </Card>
 
-                <Card title="Profile-linked field plan">
+                <Card
+                  title="Profile-linked field plan"
+                  className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+                >
                   <div className="space-y-3">
                     {selectedTrips.length ? (
                       selectedTrips.map((trip) => (
-                        <div key={trip.id} className="rounded-[18px] bg-slate-50 p-4">
+                        <div
+                          key={trip.id}
+                          className="rounded-[20px] border border-[#d7e2ef] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4"
+                        >
                           <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
                             {trip.bucket === 'reserve' ? trip.status : trip.dateLabel}
                           </p>
@@ -839,7 +949,7 @@ function MainApp() {
                 </Card>
               </div>
 
-              <Card title="Verified sources" subtitle="News sheet entries linked to this LGU.">
+              <Card title="Verified sources" subtitle="Open-source entries linked to this LGU.">
                 {selectedSources.length ? (
                   <div className="grid gap-3 xl:grid-cols-2">
                     {selectedSources.map((item) => (
