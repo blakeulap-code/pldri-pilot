@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:workbook": "python3 scripts/sync_workbook.py"
   },
   "dependencies": {
     "firebase": "^11.0.0",
