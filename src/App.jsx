@@ -7,7 +7,7 @@ import {
   LayoutDashboard, CalendarDays, MapPin, Printer, 
   Building, AlertTriangle, Map as MapIcon, Plane, Ship, ShieldAlert,
   Edit, Save, X, PlusCircle, Newspaper, Crosshair, User, Users, Cloud, 
-  Activity, RefreshCw, Satellite, Database
+  Activity, RefreshCw, Satellite, Database, Radio, Camera
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -27,6 +27,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SCHEDULES_PATH = 'artifacts/pldri/public/data/schedules';
+
+// --- ERROR BOUNDARY (Prevents White Screens) ---
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, errorInfo) { console.error("PILOT Crash:", error, errorInfo); this.setState({ errorInfo }); }
+  render() {
+    if (this.state.hasError) return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-8 flex flex-col items-center justify-center font-mono">
+        <div className="bg-red-950/20 border border-red-500/50 p-6 rounded-xl shadow-2xl max-w-2xl w-full">
+          <h2 className="text-2xl font-black text-red-500 mb-2 flex items-center"><ShieldAlert className="mr-2"/> System Crash Detected</h2>
+          <p className="text-slate-400 text-sm mb-4">Please copy this error and send it to your AI to fix instantly:</p>
+          <div className="bg-black p-4 rounded text-red-400 text-xs overflow-x-auto">
+            <strong>{this.state.error && this.state.error.toString()}</strong>
+            <pre className="mt-2 text-slate-500">{this.state.errorInfo && this.state.errorInfo.componentStack}</pre>
+          </div>
+          <button onClick={() => window.location.reload()} className="mt-6 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded font-bold">Reload Dashboard</button>
+        </div>
+      </div>
+    );
+    return this.props.children;
+  }
+}
 
 // --- VERBATIM NEWS DATABASE (From News.csv) ---
 const engagementDatabase = {
@@ -55,7 +78,7 @@ const engagementDatabase = {
   ]
 };
 
-// --- ALL 25 LGU DATA (Verbatim + Fixed Types & Radar Data) ---
+// --- ALL 25 LGU DATA (Verbatim + Fixed Types) ---
 const lguData = [
   { id: 1, name: "Zamboanga City", province: "Zamboanga Del Sur", region: "Region IX", type: "City", typology: "A+B+C", shade: "Red", lceName: "KHYMER ADAN TAING OLASO", age: "50", term: "1st term", background: "Master Mariner, Councilor from 2019 to 2022 and Representative from 2022 to 2025. Filipino father and Cambodian mother.", totalScore: 0.3599, photos: "/photos/zamboanga_lce.jpg", stats: { psgc: "097332000", pop: "977,234", income: "1st Class", urbanRural: "Highly Urbanized", coastal: "Yes" }, coords: { x: 38, y: 82 }, 
     analysis: "Zamboanga City's selection is driven by critical data points across all three domains. It shows significant LSR dependence and measurable direct foreign donations. Its strategic proximity compounds its complex security environment, which has been historically vulnerable to border dynamics and past terroristic attacks. It maxes out indicators for institutional opacity and registers a very high foreign presence footprint.",
@@ -217,11 +240,11 @@ const lguData = [
 const defaultSchedules = [
   { id: "1", date: "23-Mar (Mon)", lgu: "Zamboanga City", province: "Zamboanga del Sur", typology: "A+B+C", mode: "Flight (MNL–ZAM)", time: "~1 hr 50 min", personnel: "", notes: "Mindanao deployment" },
   { id: "2", date: "24-Mar (Tue)", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 50 min", personnel: "", notes: "Return" },
-  { id: "3", date: "26-Mar (Thu)", lgu: "Nueva Ecija (Province)", province: "Central Luzon", typology: "A+B+C", mode: "Land (NLEX corridor)", time: "~2.5–3 hrs", personnel: "", notes: "Central Luzon cluster" },
-  { id: "4", date: "27-Mar (Fri)", lgu: "Pampanga (Province)", province: "Central Luzon", typology: "A+B", mode: "Land", time: "~1–1.5 hrs from Nueva Ecija", personnel: "", notes: "Same corridor" },
-  { id: "5", date: "31-Mar (Tue)", lgu: "Cagayan (Province)", province: "Cagayan Valley", typology: "A+C", mode: "Flight (MNL–TUG) + land", time: "~1 hr 15 min + 30 min", personnel: "", notes: "Northern cluster" },
+  { id: "3", date: "26-Mar (Thu)", lgu: "Nueva Ecija", province: "Central Luzon", typology: "A+B+C", mode: "Land (NLEX corridor)", time: "~2.5–3 hrs", personnel: "", notes: "Central Luzon cluster" },
+  { id: "4", date: "27-Mar (Fri)", lgu: "Pampanga", province: "Central Luzon", typology: "A+B", mode: "Land", time: "~1–1.5 hrs from Nueva Ecija", personnel: "", notes: "Same corridor" },
+  { id: "5", date: "31-Mar (Tue)", lgu: "Cagayan", province: "Cagayan Valley", typology: "A+C", mode: "Flight (MNL–TUG)", time: "~1 hr 15 min", personnel: "", notes: "Northern cluster" },
   { id: "6", date: "01-Apr (Wed)", lgu: "Tuguegarao City", province: "Cagayan", typology: "B+C", mode: "Local land", time: "~20–30 min", personnel: "", notes: "Same provincial capital" },
-  { id: "7", date: "03-Apr (Fri)", lgu: "Baguio City", province: "Benguet", typology: "A+B", mode: "Land (TPLEX + Marcos Hwy)", time: "~4–5 hrs", personnel: "", notes: "Stand-alone northern trip" },
+  { id: "7", date: "03-Apr (Fri)", lgu: "Baguio City", province: "Benguet", typology: "A+B", mode: "Land (TPLEX)", time: "~4–5 hrs", personnel: "", notes: "Stand-alone northern trip" },
   { id: "8", date: "07-Apr (Tue)", lgu: "Iloilo City", province: "Iloilo", typology: "A+B+C", mode: "Flight (MNL–ILO)", time: "~1 hr 10 min", personnel: "", notes: "Visayas deployment" }
 ];
 
@@ -242,7 +265,7 @@ const DomainRadar = ({ title, data, color }) => (
   </div>
 );
 
-// Philippine Map Component (Labels perfectly mapped to LGUs)
+// Philippine Map Component
 const PhMapSvg = ({ data, activeLgu }) => (
   <div className="w-full h-full relative p-4">
     <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full text-slate-800 drop-shadow-md" preserveAspectRatio="xMidYMid meet">
@@ -279,11 +302,11 @@ function MainApp() {
   const [isScanning, setIsScanning] = useState(false);
   const [localNews, setLocalNews] = useState([]);
 
-  // Correct calculation based on explicit 'type' in lguData
-  const countProvinces = profileData.filter(l => l.type === 'Province').length; // 9
-  const countCities = profileData.filter(l => l.type === 'City').length; // 15
-  const countMunis = profileData.filter(l => l.type === 'Municipality').length; // 1
-  const totalLgus = profileData.length; // 25
+  // Accurate counting mapped cleanly from the provided JSON list
+  const countProvinces = profileData.filter(l => l.type === 'Province').length; 
+  const countCities = profileData.filter(l => l.type === 'City').length; 
+  const countMunis = profileData.filter(l => l.type === 'Municipality').length; 
+  const totalLgus = profileData.length; 
 
   useEffect(() => {
     const queryCollection = collection(db, SCHEDULES_PATH);
@@ -326,13 +349,11 @@ function MainApp() {
   const selectedLgu = profileData.find(lgu => lgu.id === selectedLguId) || profileData[0];
   const lguEngagements = engagementDatabase[selectedLgu?.name] || [];
 
-  // Reset local AI news when switching profiles
   useEffect(() => { setLocalNews([]); }, [selectedLguId]);
 
   const runAIScan = () => {
     setIsScanning(true);
     setTimeout(() => {
-      // Pick a real news item if available, otherwise fallback to generic
       const realNews = engagementDatabase[selectedLgu.name];
       const newsItem = realNews && realNews.length > 0 
         ? realNews[Math.floor(Math.random() * realNews.length)]
