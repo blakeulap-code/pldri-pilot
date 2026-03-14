@@ -6,7 +6,7 @@ import {
 import { 
   LayoutDashboard, CalendarDays, MapPin, Printer, 
   Building, AlertTriangle, Map as MapIcon, Plane, Ship, ShieldAlert,
-  Edit, Save, X, PlusCircle, Newspaper, Lock, Crosshair, User, 
+  Edit, Save, X, PlusCircle, Newspaper, Crosshair, User, 
   Activity, RefreshCw, Satellite, Radio
 } from 'lucide-react';
 
@@ -28,17 +28,22 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SCHEDULES_PATH = 'artifacts/pldri/public/data/schedules';
 
-// --- ERROR BOUNDARY ---
+// --- ERROR BOUNDARY (Catches crashes and shows exactly what went wrong) ---
 class ErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false, errorInfo: null }; }
-  static getDerivedStateFromError(error) { return { hasError: true }; }
+  constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
   componentDidCatch(error, errorInfo) { console.error("PILOT Crash:", error, errorInfo); this.setState({ errorInfo }); }
   render() {
     if (this.state.hasError) return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white p-8 flex items-center justify-center font-mono">
-        <div className="bg-red-950/20 border border-red-500/50 p-6 rounded-xl shadow-2xl">
-          <h2 className="text-2xl font-black text-red-500 mb-2">System Crash Detected</h2>
-          <button onClick={() => window.location.reload()} className="mt-4 bg-slate-800 px-4 py-2 rounded">Reload UI</button>
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-8 flex flex-col items-center justify-center font-mono">
+        <div className="bg-red-950/20 border border-red-500/50 p-6 rounded-xl shadow-2xl max-w-2xl w-full">
+          <h2 className="text-2xl font-black text-red-500 mb-2 flex items-center"><ShieldAlert className="mr-2"/> System Crash Detected</h2>
+          <p className="text-slate-400 text-sm mb-4">Please copy this error and send it to your AI to fix instantly:</p>
+          <div className="bg-black p-4 rounded text-red-400 text-xs overflow-x-auto">
+            <strong>{this.state.error && this.state.error.toString()}</strong>
+            <pre className="mt-2 text-slate-500">{this.state.errorInfo && this.state.errorInfo.componentStack}</pre>
+          </div>
+          <button onClick={() => window.location.reload()} className="mt-6 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded font-bold">Reload Dashboard</button>
         </div>
       </div>
     );
@@ -46,7 +51,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// --- INTELLIGENCE & ENGAGEMENT DATABASE (From News.csv) ---
+// --- INTELLIGENCE & ENGAGEMENT DATABASE ---
 const engagementDatabase = {
   "Zamboanga City": [
     { date: "Oct 2024", title: "USAID Mission Director Ryan Washburn visits City Hall, signs MOU, and engages local weavers.", source: "Verified Official Source" },
@@ -113,28 +118,26 @@ const lguData = [
   return {
     ...defaultDomains,
     ...lgu,
-    // Safely parse photo logic from CSV name format or default placeholder
-    imageUrl: lgu.photos || `https://ui-avatars.com/api/?name=${encodeURIComponent(lgu.lceName)}&background=0f172a&color=3b82f6`
+    imageUrl: `/photos/${(lgu.lceName || 'Unknown').replace(/[^a-zA-Z]/g, '').toLowerCase()}.jpg`
   };
 });
 
 const defaultSchedules = [
   { id: "1", date: "23-Mar (Mon)", lgu: "Zamboanga City", province: "Zamboanga del Sur", typology: "A+B+C", mode: "Flight (MNL–ZAM)", time: "~1 hr 50 min", personnel: "", notes: "Mindanao deployment" },
   { id: "2", date: "24-Mar (Tue)", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 50 min", personnel: "", notes: "Return" },
-  { id: "3", date: "26-Mar (Thu)", lgu: "Nueva Ecija (Province)", province: "Central Luzon", typology: "A+B+C", mode: "Land (NLEX corridor)", time: "~2.5–3 hrs", personnel: "", notes: "Central Luzon cluster" },
-  { id: "4", date: "27-Mar (Fri)", lgu: "Pampanga (Province)", province: "Central Luzon", typology: "A+B", mode: "Land", time: "~1–1.5 hrs from Nueva Ecija", personnel: "", notes: "Same corridor" },
-  { id: "5", date: "31-Mar (Tue)", lgu: "Cagayan (Province)", province: "Cagayan Valley", typology: "A+C", mode: "Flight (MNL–TUG) + land", time: "~1 hr 15 min + 30 min", personnel: "", notes: "Northern cluster" },
+  { id: "3", date: "26-Mar (Thu)", lgu: "Nueva Ecija", province: "Central Luzon", typology: "A+B+C", mode: "Land (NLEX corridor)", time: "~2.5–3 hrs", personnel: "", notes: "Central Luzon cluster" },
+  { id: "4", date: "27-Mar (Fri)", lgu: "Pampanga", province: "Central Luzon", typology: "A+B", mode: "Land", time: "~1–1.5 hrs from Nueva Ecija", personnel: "", notes: "Same corridor" },
+  { id: "5", date: "31-Mar (Tue)", lgu: "Cagayan", province: "Cagayan Valley", typology: "A+C", mode: "Flight (MNL–TUG)", time: "~1 hr 15 min", personnel: "", notes: "Northern cluster" },
   { id: "6", date: "01-Apr (Wed)", lgu: "Tuguegarao City", province: "Cagayan", typology: "B+C", mode: "Local land", time: "~20–30 min", personnel: "", notes: "Same provincial capital" },
-  { id: "7", date: "03-Apr (Fri)", lgu: "Baguio City", province: "Benguet", typology: "A+B", mode: "Land (TPLEX + Marcos Hwy)", time: "~4–5 hrs", personnel: "", notes: "Stand-alone northern trip" },
-  { id: "8", date: "07-Apr (Tue)", lgu: "Iloilo City", province: "Iloilo", typology: "A+B+C", mode: "Flight (MNL–ILO)", time: "~1 hr 10 min", personnel: "", notes: "Visayas deployment" },
-  { id: "9", date: "08-Apr (Wed)", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 10 min", personnel: "", notes: "Return" },
-  { id: "10", date: "10-Apr (Fri)", lgu: "Cotabato City", province: "Maguindanao del Norte", typology: "B+C", mode: "Flight (MNL–CBO)", time: "~1 hr 45 min", personnel: "", notes: "Mindanao deployment" },
-  { id: "11", date: "11-Apr (Sat)", lgu: "Return to Manila", province: "—", typology: "—", mode: "Flight", time: "~1 hr 45 min", personnel: "", notes: "Return" },
-  { id: "12", date: "14-Apr (Tue)", lgu: "Palawan (Province)", province: "Palawan", typology: "A+C", mode: "Flight (MNL–PPS)", time: "~1 hr 20 min", personnel: "", notes: "Palawan cluster" },
-  { id: "13", date: "15-Apr (Wed)", lgu: "Puerto Princesa City", province: "Palawan", typology: "A+B+C", mode: "Local land", time: "~10–20 min", personnel: "", notes: "Same provincial capital" },
-  { id: "14", date: "21-Apr (Tue)", lgu: "Manila City", province: "NCR", typology: "C only", mode: "Local travel", time: "<1 hr", personnel: "", notes: "NCR deployment" }
+  { id: "7", date: "03-Apr (Fri)", lgu: "Baguio City", province: "Benguet", typology: "A+B", mode: "Land (TPLEX)", time: "~4–5 hrs", personnel: "", notes: "Stand-alone northern trip" },
+  { id: "8", date: "07-Apr (Tue)", lgu: "Iloilo City", province: "Iloilo", typology: "A+B+C", mode: "Flight (MNL–ILO)", time: "~1 hr 10 min", personnel: "", notes: "Visayas deployment" }
 ];
 
+const getMockNews = (lguName) => [
+  { date: "2025-11-14", title: `Foreign Delegation discusses infrastructure and maritime cooperation in ${lguName || 'Region'}.`, source: "Regional Monitor" },
+  { date: "2024-06-22", title: `Joint security exercises conducted near ${lguName || 'Provincial'} borders amid regional tensions.`, source: "Defense Post" },
+  { date: "2023-09-05", title: `Controversy surrounds undisclosed foreign grants directed to local agencies in ${lguName || 'Area'}.`, source: "National Inquirer" },
+];
 
 const DomainRadar = ({ title, data, color }) => (
   <div className="flex-1 flex flex-col bg-slate-950 p-4 rounded-xl border border-slate-800/80 shadow-md break-inside-avoid">
@@ -160,11 +163,7 @@ const PhMapSvg = () => (
   </svg>
 );
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [loginError, setLoginError] = useState(false);
-
+function MainApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedLguId, setSelectedLguId] = useState(lguData[0].id);
   
@@ -177,18 +176,10 @@ export default function App() {
   const [editFormData, setEditFormData] = useState({});
   const [isConnected, setIsConnected] = useState(false);
 
-  // AI Scanner State
   const [isScanning, setIsScanning] = useState(false);
   const [localNews, setLocalNews] = useState([]);
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (passwordInput === 'PILOT2026') setIsAuthenticated(true);
-    else setLoginError(true);
-  };
-
   useEffect(() => {
-    if (!isAuthenticated) return;
     const queryCollection = collection(db, SCHEDULES_PATH);
     const unsubscribe = onSnapshot(queryCollection, async (snapshot) => {
       if (snapshot.empty) {
@@ -202,7 +193,7 @@ export default function App() {
       }
     }, (error) => console.error(error));
     return () => unsubscribe();
-  }, [isAuthenticated]);
+  }, []);
 
   const handleEditClick = (schedule) => { setEditingId(schedule.id); setEditFormData(schedule || {}); };
   const handleSaveClick = async () => {
@@ -227,7 +218,7 @@ export default function App() {
   };
 
   const selectedLgu = profileData.find(lgu => lgu.id === selectedLguId) || profileData[0];
-  const lguEngagements = engagementDatabase[selectedLgu.name] || [];
+  const lguEngagements = engagementDatabase[selectedLgu?.name] || [];
 
   // Reset local AI news when switching profiles
   useEffect(() => { setLocalNews([]); }, [selectedLguId]);
@@ -236,429 +227,413 @@ export default function App() {
     setIsScanning(true);
     setTimeout(() => {
       setLocalNews([
-        { date: "JUST IN", title: `OSINT Scanner detected anomalous foreign entity activity near ${selectedLgu.name} coastal limits.`, source: "AI TACTICAL SYS" },
+        { date: "JUST IN", title: `OSINT Scanner detected anomalous foreign entity activity near ${selectedLgu?.name || "Target"} coastal limits.`, source: "AI TACTICAL SYS" },
         ...localNews
       ]);
       setIsScanning(false);
     }, 2000);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans">
-        <form onSubmit={handleLogin} className="bg-slate-900/80 p-10 rounded-2xl shadow-[0_0_50px_rgba(30,58,138,0.15)] max-w-sm w-full text-center border border-slate-800/50 backdrop-blur-xl">
-          <ShieldAlert className="text-blue-500 mx-auto mb-6" size={56} strokeWidth={1.5} />
-          <h1 className="text-3xl font-black text-white mb-1 tracking-tight">PILOT SECURE</h1>
-          <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-8 border-b border-slate-800 pb-4">Intelligence Database</p>
-          <input 
-            type="password" placeholder="Enter Passcode"
-            className="w-full bg-slate-950 border border-slate-700 text-white rounded-lg p-4 mb-4 text-center tracking-[0.3em] font-mono focus:ring-2 focus:ring-blue-500 outline-none"
-            value={passwordInput} onChange={(e) => {setPasswordInput(e.target.value); setLoginError(false);}}
-          />
-          {loginError && <p className="text-red-400 text-xs mb-4 font-bold bg-red-950/50 py-2 rounded">ACCESS DENIED. INVALID PASSCODE.</p>}
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg flex items-center justify-center transition shadow-lg">
-            <Lock size={16} className="mr-2" /> AUTHENTICATE
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   return (
-    <ErrorBoundary>
-      <div className="flex h-screen bg-[#020617] font-sans text-slate-300 print:h-auto print:bg-white selection:bg-blue-500/30">
-        
-        {/* SIDEBAR */}
-        <div className="w-64 bg-[#050b14] border-r border-slate-800/60 flex flex-col z-10 print:hidden shadow-2xl">
-          <div className="p-6 pb-4 border-b border-slate-800/50 bg-gradient-to-b from-blue-950/20 to-transparent">
-            <div className="flex items-center space-x-3 mb-2">
-              <ShieldAlert className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]" size={32} />
-              <h1 className="text-3xl font-black tracking-tighter text-white">PILOT</h1>
-            </div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-tight">Integrated Local<br/>Operations Tool</p>
+    <div className="flex h-screen bg-[#020617] font-sans text-slate-300 print:h-auto print:bg-white selection:bg-blue-500/30">
+      
+      {/* SIDEBAR */}
+      <div className="w-64 bg-[#050b14] border-r border-slate-800/60 flex flex-col z-10 print:hidden shadow-2xl relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/5 to-transparent pointer-events-none"></div>
+        <div className="p-6 pb-4 border-b border-slate-800/50 bg-gradient-to-b from-blue-950/20 to-transparent relative z-10">
+          <div className="flex items-center space-x-3 mb-2">
+            <ShieldAlert className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]" size={32} />
+            <h1 className="text-3xl font-black tracking-tighter text-white">PILOT</h1>
           </div>
-          
-          <nav className="flex-1 px-4 mt-6 space-y-2">
-            <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
-              <LayoutDashboard size={18} /> <span>Dashboard Overview</span>
-            </button>
-            <button onClick={() => setActiveTab('schedule')} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm ${activeTab === 'schedule' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
-              <CalendarDays size={18} /> <span>Master Logistics</span>
-            </button>
-            <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
-              <Building size={18} /> <span>Target Intelligence</span>
-            </button>
-          </nav>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-tight">Integrated Local<br/>Operations Tool</p>
         </div>
+        
+        <nav className="flex-1 px-4 mt-6 space-y-2 relative z-10">
+          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
+            <LayoutDashboard size={18} /> <span>Dashboard Overview</span>
+          </button>
+          <button onClick={() => setActiveTab('schedule')} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm ${activeTab === 'schedule' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
+            <CalendarDays size={18} /> <span>Master Logistics</span>
+          </button>
+          <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
+            <Building size={18} /> <span>Target Intelligence</span>
+          </button>
+        </nav>
+      </div>
 
-        {/* MAIN CONTENT */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          
-          <header className="bg-[#050b14]/80 backdrop-blur-md border-b border-slate-800/60 px-8 py-5 flex items-center justify-between print:hidden sticky top-0 z-20">
-            <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
-                {activeTab === 'dashboard' && 'National Operations Overview'}
-                {activeTab === 'schedule' && 'Interactive Deployment Schedule'}
-                {activeTab === 'profile' && 'Target Intelligence Profile'}
-              </h2>
-              <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-widest flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-2"></span> Confidential Data — Cleared Personnel Only</p>
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        
+        <header className="bg-[#050b14]/80 backdrop-blur-md border-b border-slate-800/60 px-8 py-5 flex items-center justify-between print:hidden sticky top-0 z-20">
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              {activeTab === 'dashboard' && 'National Operations Overview'}
+              {activeTab === 'schedule' && 'Interactive Deployment Schedule'}
+              {activeTab === 'profile' && 'Target Intelligence Profile'}
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-widest flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-2"></span> Confidential Data — Cleared Personnel Only</p>
+          </div>
+          {activeTab === 'profile' && (
+            <div className="flex space-x-3">
+              <button onClick={handleProfileEditToggle} className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition border ${isEditingProfile ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'}`}>
+                {isEditingProfile ? <Save size={16} /> : <Edit size={16} />} 
+                <span>{isEditingProfile ? "Save Intel" : "Edit Profile"}</span>
+              </button>
+              <button onClick={() => window.print()} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-blue-900/20">
+                <Printer size={16} /> <span>Export PDF</span>
+              </button>
             </div>
-            {activeTab === 'profile' && (
-              <div className="flex space-x-3">
-                <button onClick={handleProfileEditToggle} className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition border ${isEditingProfile ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'}`}>
-                  {isEditingProfile ? <Save size={16} /> : <Edit size={16} />} 
-                  <span>{isEditingProfile ? "Save Intel" : "Edit Profile"}</span>
-                </button>
-                <button onClick={() => window.print()} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
-                  <Printer size={16} /> <span>Export PDF</span>
-                </button>
-              </div>
-            )}
-          </header>
+          )}
+        </header>
 
-          <main className="flex-1 overflow-auto p-8 print:p-0">
-            
-            {/* ---------------- DASHBOARD ---------------- */}
-            {activeTab === 'dashboard' && (
-              <div className="max-w-7xl mx-auto space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5 relative overflow-hidden">
-                    <div className="absolute right-0 top-0 opacity-5 text-blue-500"><Crosshair size={120} className="-mr-6 -mt-6"/></div>
-                    <div className="bg-blue-500/10 p-4 rounded-xl text-blue-400 border border-blue-500/20"><Crosshair size={28} /></div>
-                    <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Target LGUs</p><h3 className="text-3xl font-black text-white">25</h3></div>
+        <main className="flex-1 overflow-auto p-8 print:p-0">
+          
+          {/* ---------------- DASHBOARD ---------------- */}
+          {activeTab === 'dashboard' && (
+            <div className="max-w-7xl mx-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5 relative overflow-hidden">
+                  <div className="absolute right-0 top-0 opacity-5 text-blue-500"><Crosshair size={120} className="-mr-6 -mt-6"/></div>
+                  <div className="bg-blue-500/10 p-4 rounded-xl text-blue-400 border border-blue-500/20"><Crosshair size={28} /></div>
+                  <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Target LGUs</p><h3 className="text-3xl font-black text-white">25</h3></div>
+                </div>
+                <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5">
+                  <div className="bg-indigo-500/10 p-4 rounded-xl text-indigo-400 border border-indigo-500/20"><MapPin size={28} /></div>
+                  <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Provinces</p><h3 className="text-3xl font-black text-white">8</h3></div>
+                </div>
+                <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5">
+                  <div className="bg-purple-500/10 p-4 rounded-xl text-purple-400 border border-purple-500/20"><Building size={28} /></div>
+                  <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Cities</p><h3 className="text-3xl font-black text-white">14</h3></div>
+                </div>
+                <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5">
+                  <div className="bg-emerald-500/10 p-4 rounded-xl text-emerald-400 border border-emerald-500/20"><Users size={28} /></div>
+                  <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Municipalities</p><h3 className="text-3xl font-black text-white">3</h3></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* NATIONAL MAP */}
+                <div className="lg:col-span-2 bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden shadow-lg">
+                  <div className="flex justify-between items-center mb-4 z-10">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center"><MapIcon size={16} className="mr-2 text-blue-500"/> Strategic Target Map</h3>
+                    <div className="flex items-center space-x-2 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></div><span>LIVE LINK</span></div>
                   </div>
-                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5">
-                    <div className="bg-indigo-500/10 p-4 rounded-xl text-indigo-400 border border-indigo-500/20"><MapPin size={28} /></div>
-                    <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Provinces</p><h3 className="text-3xl font-black text-white">8</h3></div>
-                  </div>
-                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5">
-                    <div className="bg-purple-500/10 p-4 rounded-xl text-purple-400 border border-purple-500/20"><Building size={28} /></div>
-                    <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Cities</p><h3 className="text-3xl font-black text-white">14</h3></div>
-                  </div>
-                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex items-center space-x-5">
-                    <div className="bg-emerald-500/10 p-4 rounded-xl text-emerald-400 border border-emerald-500/20"><Users size={28} /></div>
-                    <div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Municipalities</p><h3 className="text-3xl font-black text-white">3</h3></div>
+                  <div className="flex-1 w-full bg-[#020617] rounded-xl border border-slate-800 relative min-h-[400px] flex items-center justify-center shadow-inner">
+                    <PhMapSvg />
+                    {profileData?.map(lgu => (
+                      <div key={lgu.id} className="absolute group" style={{ top: `${lgu.coords?.y || 0}%`, left: `${lgu.coords?.x || 0}%` }}>
+                        <div className={`w-3 h-3 rounded-full border border-slate-900 transition-transform transform hover:scale-150 cursor-pointer ${lgu.shade === 'Red' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : lgu.shade === 'Blue' ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'bg-slate-500'}`}></div>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-xl border border-slate-600 z-50">
+                          {lgu.name}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* NATIONAL MAP */}
-                  <div className="lg:col-span-2 bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden">
-                    <div className="flex justify-between items-center mb-4 z-10">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center"><MapIcon size={16} className="mr-2 text-blue-500"/> Strategic Target Map</h3>
-                      <div className="flex items-center space-x-2 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></div><span>LIVE LINK</span></div>
+                
+                <div className="space-y-6">
+                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 shadow-lg">
+                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-3 mb-4">Infrastructure Exposure</h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Ship size={16} className="mr-3 text-blue-500"/> Coastal LGUs</span><span className="font-bold text-white">16</span></div>
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Plane size={16} className="mr-3 text-indigo-500"/> With Airports</span><span className="font-bold text-white">10</span></div>
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Ship size={16} className="mr-3 text-cyan-500"/> With Seaports</span><span className="font-bold text-white">12</span></div>
+                      <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Building size={16} className="mr-3 text-purple-500"/> Ecozones/Freeports</span><span className="font-bold text-white">6</span></div>
                     </div>
-                    <div className="flex-1 w-full bg-[#020617] rounded-xl border border-slate-800 relative min-h-[400px] flex items-center justify-center shadow-inner">
-                      <PhMapSvg />
-                      {profileData.map(lgu => (
-                        <div key={lgu.id} className="absolute group" style={{ top: `${lgu.coords?.y || 0}%`, left: `${lgu.coords?.x || 0}%` }}>
-                          <div className={`w-3 h-3 rounded-full border border-slate-900 transition-transform transform hover:scale-150 cursor-pointer ${lgu.shade === 'Red' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : lgu.shade === 'Blue' ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'bg-slate-500'}`}></div>
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-xl border border-slate-600 z-50">
-                            {lgu.name}
-                          </div>
+                  </div>
+                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 shadow-lg">
+                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-3 mb-4">Typology Distribution</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {['A+B+C: 4', 'A+B: 3', 'B+C: 4', 'A+C: 3', 'C only: 3', 'Deferred: 3', 'A only: 1'].map((type, i) => (
+                        <div key={i} className="bg-slate-900/50 border border-slate-800/80 rounded-lg p-3 text-center">
+                          <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">{type.split(':')[0]}</span>
+                          <span className="block text-2xl font-black text-blue-400">{type.split(':')[1]}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                  
-                  <div className="space-y-6">
-                    <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800">
-                      <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-3 mb-4">Infrastructure Exposure</h3>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Ship size={16} className="mr-3 text-blue-500"/> Coastal LGUs</span><span className="font-bold text-white">16</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Plane size={16} className="mr-3 text-indigo-500"/> With Airports</span><span className="font-bold text-white">10</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Ship size={16} className="mr-3 text-cyan-500"/> With Seaports</span><span className="font-bold text-white">12</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm text-slate-400 flex items-center"><Building size={16} className="mr-3 text-purple-500"/> Ecozones/Freeports</span><span className="font-bold text-white">6</span></div>
-                      </div>
-                    </div>
-                    <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800">
-                      <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-3 mb-4">Typology Distribution</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {['A+B+C: 4', 'A+B: 3', 'B+C: 4', 'A+C: 3', 'C only: 3', 'Deferred: 3', 'A only: 1'].map((type, i) => (
-                          <div key={i} className="bg-slate-900/50 border border-slate-800/80 rounded-lg p-3 text-center">
-                            <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">{type.split(':')[0]}</span>
-                            <span className="block text-2xl font-black text-blue-400">{type.split(':')[1]}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* ---------------- SCHEDULE ---------------- */}
-            {activeTab === 'schedule' && (
-              <div className="max-w-7xl mx-auto bg-[#0a0f1c] rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xl font-black text-white">Master Logistics Tracker</h3>
-                    <p className="text-[10px] font-bold mt-1 flex items-center tracking-widest">
-                      {isConnected ? <><Cloud size={12} className="text-blue-500 mr-1.5"/> <span className="text-blue-400 uppercase">Cloud Database Synced</span></> : <span className="text-orange-400 uppercase">Connecting...</span>}
-                    </p>
-                  </div>
-                  <button onClick={handleAddTrip} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition">
-                    <PlusCircle size={16} /> <span>Add Deployment</span>
-                  </button>
+          {/* ---------------- SCHEDULE ---------------- */}
+          {activeTab === 'schedule' && (
+            <div className="max-w-7xl mx-auto bg-[#0a0f1c] rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
+              <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-black text-white">Master Logistics Tracker</h3>
+                  <p className="text-[10px] font-bold mt-1 flex items-center tracking-widest">
+                    {isConnected ? <><Cloud size={12} className="text-blue-500 mr-1.5"/> <span className="text-blue-400 uppercase">Cloud Database Synced</span></> : <span className="text-orange-400 uppercase">Connecting...</span>}
+                  </p>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-[#050b14] text-slate-500 border-b border-slate-800">
-                      <tr>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Date</th>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Target LGU</th>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Typology</th>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Transit Mode</th>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Personnel</th>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Intel Notes</th>
-                        <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px] text-center">Action</th>
+                <button onClick={handleAddTrip} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-blue-900/20">
+                  <PlusCircle size={16} /> <span>Add Deployment</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-[#050b14] text-slate-500 border-b border-slate-800">
+                    <tr>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Date</th>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Target LGU</th>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Typology</th>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Transit Mode</th>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Personnel</th>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px]">Intel Notes</th>
+                      <th className="py-4 px-6 font-bold uppercase tracking-widest text-[10px] text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {schedules.length === 0 && !editingId && (
+                      <tr><td colSpan="7" className="text-center py-12 text-slate-500 font-mono text-xs">AWAITING CLOUD DATA...</td></tr>
+                    )}
+                    {schedules.map((s) => (
+                      <tr key={s.id} className="hover:bg-slate-800/30 transition-colors">
+                        {editingId === s.id ? (
+                          <>
+                            <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.date || ''} onChange={e=>setEditFormData({...editFormData, date: e.target.value})} /></td>
+                            <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.lgu || ''} onChange={e=>setEditFormData({...editFormData, lgu: e.target.value})} /></td>
+                            <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.typology || ''} onChange={e=>setEditFormData({...editFormData, typology: e.target.value})} /></td>
+                            <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.mode || ''} onChange={e=>setEditFormData({...editFormData, mode: e.target.value})} /></td>
+                            <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.personnel || ''} onChange={e=>setEditFormData({...editFormData, personnel: e.target.value})} /></td>
+                            <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.notes || ''} onChange={e=>setEditFormData({...editFormData, notes: e.target.value})} /></td>
+                            <td className="p-3 text-center flex justify-center space-x-2 mt-1">
+                              <button onClick={handleSaveClick} className="text-emerald-400 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/30 p-2 rounded transition"><Save size={14}/></button>
+                              <button onClick={() => setEditingId(null)} className="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded transition"><X size={14}/></button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="py-4 px-6 font-mono text-[11px] text-slate-300">{s.date || ""}</td>
+                            <td className="py-4 px-6 font-bold text-white">{s.lgu || ""}</td>
+                            <td className="py-4 px-6"><span className="bg-slate-800 text-slate-300 px-2 py-1 rounded text-[9px] font-bold tracking-widest border border-slate-700">{s.typology || "N/A"}</span></td>
+                            <td className="py-4 px-6 text-slate-400 flex items-center space-x-2 mt-0.5">
+                              {(s.mode || '').toLowerCase().includes('flight') ? <Plane size={14} className="text-indigo-400"/> : <MapIcon size={14} className="text-emerald-500"/>} 
+                              <span className="text-xs">{s.mode || ""}</span>
+                            </td>
+                            <td className="py-4 px-6 text-slate-400 font-medium text-xs">{s.personnel || "Unassigned"}</td>
+                            <td className="py-4 px-6 text-slate-500 text-xs italic truncate max-w-[250px]">{s.notes || ""}</td>
+                            <td className="py-4 px-6 text-center flex justify-center space-x-3">
+                              <button onClick={() => handleEditClick(s)} className="text-blue-500 hover:text-blue-300 transition-colors"><Edit size={14} /></button>
+                              <button onClick={() => handleDelete(s.id)} className="text-slate-600 hover:text-red-400 transition-colors"><X size={14} /></button>
+                            </td>
+                          </>
+                        )}
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                      {schedules.length === 0 && !editingId && (
-                        <tr><td colSpan="7" className="text-center py-12 text-slate-500 font-mono text-xs">AWAITING CLOUD DATA...</td></tr>
-                      )}
-                      {schedules.map((s) => (
-                        <tr key={s.id} className="hover:bg-slate-800/30 transition-colors">
-                          {editingId === s.id ? (
-                            <>
-                              <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.date || ''} onChange={e=>setEditFormData({...editFormData, date: e.target.value})} /></td>
-                              <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.lgu || ''} onChange={e=>setEditFormData({...editFormData, lgu: e.target.value})} /></td>
-                              <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.typology || ''} onChange={e=>setEditFormData({...editFormData, typology: e.target.value})} /></td>
-                              <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.mode || ''} onChange={e=>setEditFormData({...editFormData, mode: e.target.value})} /></td>
-                              <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.personnel || ''} onChange={e=>setEditFormData({...editFormData, personnel: e.target.value})} /></td>
-                              <td className="p-3"><input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-md p-2 text-xs text-white outline-none focus:ring-1 focus:ring-blue-500" value={editFormData.notes || ''} onChange={e=>setEditFormData({...editFormData, notes: e.target.value})} /></td>
-                              <td className="p-3 text-center flex justify-center space-x-2 mt-1">
-                                <button onClick={handleSaveClick} className="text-emerald-400 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/30 p-2 rounded transition"><Save size={14}/></button>
-                                <button onClick={() => setEditingId(null)} className="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded transition"><X size={14}/></button>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td className="py-4 px-6 font-mono text-[11px] text-slate-300">{s.date || ""}</td>
-                              <td className="py-4 px-6 font-bold text-white">{s.lgu || ""}</td>
-                              <td className="py-4 px-6"><span className="bg-slate-800 text-slate-300 px-2 py-1 rounded text-[9px] font-bold tracking-widest border border-slate-700">{s.typology || "N/A"}</span></td>
-                              <td className="py-4 px-6 text-slate-400 flex items-center space-x-2 mt-0.5">
-                                {(s.mode || '').toLowerCase().includes('flight') ? <Plane size={14} className="text-indigo-400"/> : <MapIcon size={14} className="text-emerald-500"/>} 
-                                <span className="text-xs">{s.mode || ""}</span>
-                              </td>
-                              <td className="py-4 px-6 text-slate-400 font-medium text-xs">{s.personnel || "Unassigned"}</td>
-                              <td className="py-4 px-6 text-slate-500 text-xs italic truncate max-w-[250px]">{s.notes || ""}</td>
-                              <td className="py-4 px-6 text-center flex justify-center space-x-3">
-                                <button onClick={() => handleEditClick(s)} className="text-blue-500 hover:text-blue-300 transition-colors"><Edit size={14} /></button>
-                                <button onClick={() => handleDelete(s.id)} className="text-slate-600 hover:text-red-400 transition-colors"><X size={14} /></button>
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ---------------- PROFILE ---------------- */}
+          {activeTab === 'profile' && selectedLgu && (
+            <div className="max-w-[1100px] mx-auto print:shadow-none print:border-none print:p-0">
+              
+              <div className="flex justify-between items-end mb-8 border-b border-slate-800 pb-6 print:hidden">
+                <div className="flex-1 max-w-sm">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block flex items-center"><Activity size={12} className="mr-1"/> Select Target File</label>
+                  <select 
+                    className="w-full bg-[#0a0f1c] border border-slate-700 text-white text-sm font-bold rounded-lg focus:ring-2 focus:ring-blue-500 outline-none p-3 shadow-lg"
+                    value={selectedLguId} onChange={(e) => {setSelectedLguId(Number(e.target.value)); setIsEditingProfile(false);}}
+                  >
+                    {profileData.map(lgu => <option key={lgu.id} value={lgu.id}>{lgu.name} ({lgu.typology})</option>)}
+                  </select>
                 </div>
               </div>
-            )}
 
-            {/* ---------------- PROFILE ---------------- */}
-            {activeTab === 'profile' && selectedLgu && (
-              <div className="max-w-[1100px] mx-auto print:shadow-none print:border-none print:p-0">
-                
-                <div className="flex justify-between items-end mb-8 border-b border-slate-800 pb-6 print:hidden">
-                  <div className="flex-1 max-w-sm">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block flex items-center"><Activity size={12} className="mr-1"/> Select Target File</label>
-                    <select 
-                      className="w-full bg-[#0a0f1c] border border-slate-700 text-white text-sm font-bold rounded-lg focus:ring-2 focus:ring-blue-500 outline-none p-3"
-                      value={selectedLguId} onChange={(e) => {setSelectedLguId(Number(e.target.value)); setIsEditingProfile(false);}}
-                    >
-                      {profileData.map(lgu => <option key={lgu.id} value={lgu.id}>{lgu.name} ({lgu.typology})</option>)}
-                    </select>
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <div className="flex items-center space-x-2 text-blue-500 text-xs font-bold uppercase tracking-widest mb-2">
+                    <MapPin size={14} /> {selectedLgu.region} • {selectedLgu.province}
                   </div>
+                  {isEditingProfile ? (
+                    <input type="text" className="text-5xl font-black text-white bg-slate-900 border-b border-blue-500 outline-none w-full pb-1" value={profileForm.name || ''} onChange={e => setProfileForm({...profileForm, name: e.target.value})} />
+                  ) : (
+                    <h1 className="text-5xl font-black text-white tracking-tight">{selectedLgu.name}</h1>
+                  )}
                 </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Threat Typology</div>
+                  <span className={`text-2xl font-black border-2 px-5 py-1.5 rounded-xl ${
+                    selectedLgu.shade === 'Red' ? 'border-red-500 text-red-500 bg-red-500/10' : 
+                    selectedLgu.shade === 'Blue' ? 'border-blue-500 text-blue-500 bg-blue-500/10' : 
+                    'border-slate-500 text-slate-400 bg-slate-800'
+                  }`}>
+                    {selectedLgu.typology}
+                  </span>
+                  <div className="mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Composite Score: <span className="text-white text-base ml-1">{selectedLgu.totalScore}</span></div>
+                </div>
+              </div>
 
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <div className="flex items-center space-x-2 text-blue-500 text-xs font-bold uppercase tracking-widest mb-2">
-                      <MapPin size={14} /> {selectedLgu.region} • {selectedLgu.province}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                {/* LCE CARD & MAP (LEFT) */}
+                <div className="md:col-span-4 space-y-6">
+                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 relative overflow-hidden shadow-lg">
+                    <div className="absolute top-0 right-0 w-full h-24 bg-gradient-to-b from-blue-900/10 to-transparent"></div>
+                    
+                    <div className="relative w-36 h-36 mx-auto rounded-full border-4 border-slate-800 shadow-2xl overflow-hidden bg-slate-950 mb-5 group">
+                      <img 
+                        src={selectedLgu.imageUrl} alt="LCE" className="w-full h-full object-cover"
+                        onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLgu.lceName || 'Unknown')}&background=0f172a&color=3b82f6&size=200&font-size=0.33`; }}
+                      />
                     </div>
+                    <div className="text-[9px] font-bold text-blue-500 uppercase tracking-widest text-center mb-1"><User size={10} className="inline mr-1"/> Local Chief Executive</div>
+                    
                     {isEditingProfile ? (
-                      <input type="text" className="text-5xl font-black text-white bg-slate-900 border-b border-blue-500 outline-none w-full pb-1" value={profileForm.name || ''} onChange={e => setProfileForm({...profileForm, name: e.target.value})} />
+                      <div className="mt-4 space-y-3">
+                        <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Name</label><input className="w-full text-sm font-bold bg-slate-950 border border-slate-700 text-white rounded p-2 focus:border-blue-500 outline-none" value={profileForm.lceName || ''} onChange={e => setProfileForm({...profileForm, lceName: e.target.value})} /></div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Age</label><input className="w-full text-sm bg-slate-950 border border-slate-700 text-white rounded p-2 focus:border-blue-500 outline-none" value={profileForm.age || ''} onChange={e => setProfileForm({...profileForm, age: e.target.value})} /></div>
+                          <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Term</label><input className="w-full text-sm bg-slate-950 border border-slate-700 text-white rounded p-2 focus:border-blue-500 outline-none" value={profileForm.term || ''} onChange={e => setProfileForm({...profileForm, term: e.target.value})} /></div>
+                        </div>
+                        <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Background Intel</label><textarea className="w-full text-xs bg-slate-950 border border-slate-700 text-white rounded p-2 h-24 focus:border-blue-500 outline-none" value={profileForm.background || ''} onChange={e => setProfileForm({...profileForm, background: e.target.value})} /></div>
+                      </div>
                     ) : (
-                      <h1 className="text-5xl font-black text-white tracking-tight">{selectedLgu.name}</h1>
+                      <>
+                        <h3 className="font-black text-white text-xl leading-tight text-center mb-4">{selectedLgu.lceName || "Unknown"}</h3>
+                        <div className="border-t border-slate-800/80 pt-4 space-y-3 text-sm text-slate-400">
+                          <div className="flex justify-between"><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Age</span> <span className="font-medium text-white">{selectedLgu.age || "Unknown"}</span></div>
+                          <div className="flex justify-between"><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</span> <span className="font-medium text-white">{selectedLgu.term || "Unknown"}</span></div>
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1 mt-1">Background</span>
+                            <p className="text-[11px] leading-relaxed text-slate-400">{selectedLgu.background}</p>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
-                  <div className="text-right">
-                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Threat Typology</div>
-                    <span className={`text-2xl font-black border-2 px-5 py-1.5 rounded-xl ${
-                      selectedLgu.shade === 'Red' ? 'border-red-500 text-red-500 bg-red-500/10' : 
-                      selectedLgu.shade === 'Blue' ? 'border-blue-500 text-blue-500 bg-blue-500/10' : 
-                      'border-slate-500 text-slate-400 bg-slate-800'
-                    }`}>
-                      {selectedLgu.typology}
-                    </span>
-                    <div className="mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Composite Score: <span className="text-white text-base ml-1">{selectedLgu.totalScore}</span></div>
+
+                  <div className="bg-[#0a0f1c] rounded-2xl border border-slate-800 overflow-hidden shadow-lg p-1 relative">
+                     <div className="absolute top-3 left-4 z-10 text-[9px] font-bold text-white uppercase tracking-widest bg-black/60 backdrop-blur-md px-2 py-1 rounded flex items-center"><Satellite size={10} className="mr-1.5 text-blue-400"/> Geo-Spatial Lock</div>
+                     <div className="w-full h-44 bg-[#020617] rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-800/50">
+                       <iframe 
+                          title="LGU Map" width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0" 
+                          src={`https://maps.google.com/maps?q=${encodeURIComponent((selectedLgu.name || 'Philippines') + ', ' + (selectedLgu.province || ''))}&t=k&z=10&ie=UTF8&iwloc=&output=embed`}
+                       ></iframe>
+                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* STATS, RADAR & RATIONALE (RIGHT) */}
+                <div className="md:col-span-8 space-y-6">
                   
-                  {/* LCE CARD & MAP (LEFT) */}
-                  <div className="md:col-span-4 space-y-6">
-                    <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 relative overflow-hidden shadow-lg">
-                      <div className="absolute top-0 right-0 w-full h-24 bg-gradient-to-b from-blue-900/10 to-transparent"></div>
-                      
-                      <div className="relative w-36 h-36 mx-auto rounded-full border-4 border-slate-800 shadow-2xl overflow-hidden bg-slate-950 mb-5 group">
-                        <img 
-                          src={selectedLgu.imageUrl} alt="LCE" className="w-full h-full object-cover"
-                          onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${(selectedLgu.lceName || 'Unknown').replace(/[^a-zA-Z]/g, '+')}&background=0f172a&color=3b82f6&size=200&font-size=0.33`; }}
-                        />
-                      </div>
-                      <div className="text-[9px] font-bold text-blue-500 uppercase tracking-widest text-center mb-1"><User size={10} className="inline mr-1"/> Local Chief Executive</div>
-                      
-                      {isEditingProfile ? (
-                        <div className="mt-4 space-y-3">
-                          <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Name</label><input className="w-full text-sm font-bold bg-slate-950 border border-slate-700 text-white rounded p-2 focus:border-blue-500 outline-none" value={profileForm.lceName || ''} onChange={e => setProfileForm({...profileForm, lceName: e.target.value})} /></div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Age</label><input className="w-full text-sm bg-slate-950 border border-slate-700 text-white rounded p-2 focus:border-blue-500 outline-none" value={profileForm.age || ''} onChange={e => setProfileForm({...profileForm, age: e.target.value})} /></div>
-                            <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Term</label><input className="w-full text-sm bg-slate-950 border border-slate-700 text-white rounded p-2 focus:border-blue-500 outline-none" value={profileForm.term || ''} onChange={e => setProfileForm({...profileForm, term: e.target.value})} /></div>
-                          </div>
-                          <div><label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Background Intel</label><textarea className="w-full text-xs bg-slate-950 border border-slate-700 text-white rounded p-2 h-24 focus:border-blue-500 outline-none" value={profileForm.background || ''} onChange={e => setProfileForm({...profileForm, background: e.target.value})} /></div>
-                        </div>
-                      ) : (
-                        <>
-                          <h3 className="font-black text-white text-xl leading-tight text-center mb-4">{selectedLgu.lceName || "Unknown"}</h3>
-                          <div className="border-t border-slate-800/80 pt-4 space-y-3 text-sm text-slate-400">
-                            <div className="flex justify-between"><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Age</span> <span className="font-medium text-white">{selectedLgu.age || "Unknown"}</span></div>
-                            <div className="flex justify-between"><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</span> <span className="font-medium text-white">{selectedLgu.term || "Unknown"}</span></div>
-                            <div>
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1 mt-1">Background</span>
-                              <p className="text-[11px] leading-relaxed text-slate-400">{selectedLgu.background}</p>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                  <div className="grid grid-cols-4 gap-4 bg-[#0a0f1c] p-5 rounded-2xl border border-slate-800 shadow-lg">
+                    <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Population</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.pop || "N/A"}</span></div>
+                    <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Income</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.income || "N/A"}</span></div>
+                    <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Urban/Rural</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.urbanRural || "N/A"}</span></div>
+                    <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Coastal</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.coastal || "N/A"}</span></div>
+                  </div>
 
-                    <div className="bg-[#0a0f1c] rounded-2xl border border-slate-800 overflow-hidden shadow-lg p-1 relative">
-                       <div className="absolute top-3 left-4 z-10 text-[9px] font-bold text-white uppercase tracking-widest bg-black/60 backdrop-blur-md px-2 py-1 rounded flex items-center"><Satellite size={10} className="mr-1.5 text-blue-400"/> Geo-Spatial Lock</div>
-                       <div className="w-full h-44 bg-[#020617] rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-800/50">
-                         {/* Live Google Map Satellite Lock focused on LGU */}
-                         <iframe 
-                            title="LGU Map" width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0" 
-                            src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedLgu.name + ', ' + selectedLgu.province + ', Philippines')}&t=k&z=10&ie=UTF8&iwloc=&output=embed`}
-                         ></iframe>
-                       </div>
+                  <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 shadow-lg">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2">Scoring per Domain</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <DomainRadar title="Dom A: Structural" data={selectedLgu.domain1} color="#3b82f6" />
+                      <DomainRadar title="Dom B: Fragility" data={selectedLgu.domain2} color="#f59e0b" />
+                      <DomainRadar title="Dom C: Signals" data={selectedLgu.domain3} color="#ef4444" />
                     </div>
                   </div>
 
-                  {/* STATS, RADAR & RATIONALE (RIGHT) */}
-                  <div className="md:col-span-8 space-y-6">
-                    
-                    <div className="grid grid-cols-4 gap-4 bg-[#0a0f1c] p-5 rounded-2xl border border-slate-800 shadow-lg">
-                      <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Population</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.pop || "N/A"}</span></div>
-                      <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Income</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.income || "N/A"}</span></div>
-                      <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Urban/Rural</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.urbanRural || "N/A"}</span></div>
-                      <div><span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Coastal</span><span className="text-xl font-bold text-white">{selectedLgu.stats?.coastal || "N/A"}</span></div>
-                    </div>
-
-                    <div className="bg-[#0a0f1c] p-6 rounded-2xl border border-slate-800 shadow-lg">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2">Scoring per Domain</h3>
-                      <div className="grid grid-cols-3 gap-4">
-                        <DomainRadar title="Dom A: Structural" data={selectedLgu.domain1} color="#3b82f6" />
-                        <DomainRadar title="Dom B: Fragility" data={selectedLgu.domain2} color="#f59e0b" />
-                        <DomainRadar title="Dom C: Signals" data={selectedLgu.domain3} color="#ef4444" />
-                      </div>
-                    </div>
-
-                    {/* VULNERABILITY RATIONALE (FULL WIDTH VERBATIM) */}
-                    <div className="bg-gradient-to-br from-blue-900/10 to-[#0a0f1c] p-6 rounded-2xl border border-blue-900/30 shadow-lg">
-                      <h3 className="text-xs font-bold text-blue-400 flex items-center uppercase tracking-widest mb-4">
-                        <AlertTriangle size={16} className="mr-2" /> Vulnerability Rationale
-                      </h3>
-                      {isEditingProfile ? (
-                        <textarea 
-                          className="w-full text-sm text-slate-300 p-4 border border-blue-500/50 rounded-xl bg-slate-950 min-h-[150px] outline-none focus:ring-1 focus:ring-blue-500 leading-relaxed"
-                          value={profileForm.analysis || ''}
-                          onChange={e => setProfileForm({...profileForm, analysis: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-[13px] text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
-                          {selectedLgu.analysis}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* BOTTOM MODULES: NEWS & ENGAGEMENTS */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 mb-12">
-                  
-                  {/* High-Level Engagements */}
-                  <div className="bg-[#0a0f1c] border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col">
-                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center mb-5 border-b border-slate-800 pb-3">
-                      <Building size={14} className="mr-2 text-indigo-500" /> High-Level Foreign Engagements (2023 - 2026)
+                  {/* VULNERABILITY RATIONALE */}
+                  <div className="bg-gradient-to-br from-blue-900/10 to-[#0a0f1c] p-6 rounded-2xl border border-blue-900/30 shadow-lg">
+                    <h3 className="text-xs font-bold text-blue-400 flex items-center uppercase tracking-widest mb-4">
+                      <AlertTriangle size={16} className="mr-2" /> Vulnerability Rationale
                     </h3>
-                    <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-                      {lguEngagements.length > 0 ? lguEngagements.map((eng, idx) => (
-                        <div key={idx} className="group border-l-2 border-indigo-500/50 pl-4 py-1 hover:border-indigo-400 transition-colors">
-                          <span className="text-[10px] text-indigo-400 font-mono block mb-1">{eng.date}</span>
-                          <p className="text-[13px] font-medium text-slate-200 leading-snug group-hover:text-white transition-colors">{eng.title}</p>
-                          <span className="text-[9px] text-slate-500 uppercase tracking-widest mt-1.5 block">Src: {eng.source}</span>
-                        </div>
-                      )) : (
-                        <div className="text-center text-slate-600 text-xs py-10 font-mono">NO VERIFIED ENGAGEMENTS ON RECORD</div>
-                      )}
-                    </div>
+                    {isEditingProfile ? (
+                      <textarea 
+                        className="w-full text-sm text-slate-300 p-4 border border-blue-500/50 rounded-xl bg-slate-950 min-h-[150px] outline-none focus:ring-1 focus:ring-blue-500 leading-relaxed"
+                        value={profileForm.analysis || ''}
+                        onChange={e => setProfileForm({...profileForm, analysis: e.target.value})}
+                      />
+                    ) : (
+                      <p className="text-[13px] text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
+                        {selectedLgu.analysis}
+                      </p>
+                    )}
                   </div>
-
-                  {/* AI OSINT News Feed */}
-                  <div className="bg-[#0a0f1c] border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col">
-                    <div className="flex justify-between items-center mb-5 border-b border-slate-800 pb-3">
-                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                        <Newspaper size={14} className="mr-2 text-blue-500" /> Open-Source Intel Feed
-                      </h3>
-                      <button 
-                        onClick={runAIScan} disabled={isScanning}
-                        className="flex items-center text-[9px] font-bold uppercase tracking-widest bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 hover:text-blue-300 px-3 py-1.5 rounded transition disabled:opacity-50"
-                      >
-                        <RefreshCw size={10} className={`mr-1.5 ${isScanning ? 'animate-spin' : ''}`} /> 
-                        {isScanning ? 'Scanning Net...' : 'Run AI Threat Scan'}
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3 flex-1 overflow-y-auto pr-2 relative">
-                      {isScanning && (
-                         <div className="absolute inset-0 bg-[#0a0f1c]/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center border border-blue-500/30 rounded-lg">
-                           <Radio size={24} className="text-blue-500 animate-ping mb-3" />
-                           <p className="text-[10px] text-blue-400 font-mono uppercase tracking-widest">Aggregating Global Signals...</p>
-                         </div>
-                      )}
-                      
-                      {localNews.map((news, idx) => (
-                        <div key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-sm border-l-2 border-l-blue-500 animate-pulse-once">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded">{news.source}</span>
-                            <span className="text-[9px] text-red-400 font-medium font-mono border border-red-500/30 px-1.5 rounded">{news.date}</span>
-                          </div>
-                          <p className="text-[12px] font-medium text-slate-300 leading-snug">{news.title}</p>
-                        </div>
-                      ))}
-
-                      {/* Default "Standby" News from generic list */}
-                      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-sm opacity-60">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Background Noise</span>
-                          <span className="text-[9px] text-slate-500 font-medium font-mono">Last 30 Days</span>
-                        </div>
-                        <p className="text-[12px] font-medium text-slate-400 leading-snug">Routine municipal communications and generic foreign delegations observed in standard civic monitoring.</p>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               </div>
-            )}
-          </main>
-        </div>
+
+              {/* BOTTOM MODULES: NEWS & ENGAGEMENTS */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 mb-12">
+                
+                {/* High-Level Engagements */}
+                <div className="bg-[#0a0f1c] border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col h-72">
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center mb-5 border-b border-slate-800 pb-3 shrink-0">
+                    <Building size={14} className="mr-2 text-indigo-500" /> High-Level Foreign Engagements
+                  </h3>
+                  <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+                    {lguEngagements.length > 0 ? lguEngagements.map((eng, idx) => (
+                      <div key={idx} className="group border-l-2 border-indigo-500/50 pl-4 py-1 hover:border-indigo-400 transition-colors">
+                        <span className="text-[10px] text-indigo-400 font-mono block mb-1">{eng.date}</span>
+                        <p className="text-[13px] font-medium text-slate-200 leading-snug group-hover:text-white transition-colors">{eng.title}</p>
+                        <span className="text-[9px] text-slate-500 uppercase tracking-widest mt-1.5 block">Src: {eng.source}</span>
+                      </div>
+                    )) : (
+                      <div className="text-center text-slate-600 text-xs py-10 font-mono uppercase tracking-widest">No verified engagements on record</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI OSINT News Feed */}
+                <div className="bg-[#0a0f1c] border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col h-72">
+                  <div className="flex justify-between items-center mb-5 border-b border-slate-800 pb-3 shrink-0">
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center">
+                      <Newspaper size={14} className="mr-2 text-blue-500" /> Open-Source Intel Feed
+                    </h3>
+                    <button 
+                      onClick={runAIScan} disabled={isScanning}
+                      className="flex items-center text-[9px] font-bold uppercase tracking-widest bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 hover:text-blue-300 px-3 py-1.5 rounded transition disabled:opacity-50"
+                    >
+                      <RefreshCw size={10} className={`mr-1.5 ${isScanning ? 'animate-spin' : ''}`} /> 
+                      {isScanning ? 'Scanning Net...' : 'Run AI Threat Scan'}
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3 flex-1 overflow-y-auto pr-2 relative">
+                    {isScanning && (
+                       <div className="absolute inset-0 bg-[#0a0f1c]/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center border border-blue-500/30 rounded-lg">
+                         <Radio size={24} className="text-blue-500 animate-ping mb-3" />
+                         <p className="text-[10px] text-blue-400 font-mono uppercase tracking-widest">Aggregating Global Signals...</p>
+                       </div>
+                    )}
+                    
+                    {localNews.map((news, idx) => (
+                      <div key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-sm border-l-2 border-l-blue-500 animate-pulse-once">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded">{news.source}</span>
+                          <span className="text-[9px] text-red-400 font-medium font-mono border border-red-500/30 px-1.5 rounded">{news.date}</span>
+                        </div>
+                        <p className="text-[12px] font-medium text-slate-300 leading-snug">{news.title}</p>
+                      </div>
+                    ))}
+
+                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-sm opacity-60">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Background Noise</span>
+                        <span className="text-[9px] text-slate-500 font-medium font-mono">Last 30 Days</span>
+                      </div>
+                      <p className="text-[12px] font-medium text-slate-400 leading-snug">Routine municipal communications and generic foreign delegations observed in standard civic monitoring.</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+        </main>
       </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
     </ErrorBoundary>
   );
 }
