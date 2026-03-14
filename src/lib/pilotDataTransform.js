@@ -11,123 +11,123 @@ export const DOMAIN_LABELS = {
 export const INDICATOR_META = [
   {
     key: 'paradiplomacyIntensity',
-    label: 'Paradiplomacy intensity',
-    shortLabel: 'Paradiplomacy',
+    label: 'International linkages',
+    shortLabel: 'Intl links',
     domain: 'A',
     prompt:
-      'Which sister-city deals, foreign MOUs, or embassy links are most active, and who approves them locally?',
+      'Could you share how the LGU approaches international linkages, such as sister-city relationships, formal partnerships, or similar engagements?',
   },
   {
     key: 'economicDependenceOnForeignLinkedReceipts',
-    label: 'Foreign-linked receipts',
-    shortLabel: 'Foreign receipts',
+    label: 'High external funding',
+    shortLabel: 'Ext funding',
     domain: 'A',
     prompt:
-      'How much of the LGU revenue base depends on foreign-linked zones, grants, or receipts that could create leverage?',
+      'Could you help us understand how external or foreign-linked funding contributes to the LGU’s resource base and development priorities?',
   },
   {
     key: 'lsrDependenceInverse',
-    label: 'Low self-reliance',
+    label: 'Limited LSR',
     shortLabel: 'Low self-reliance',
     domain: 'A',
     prompt:
-      'Where are the fiscal gaps that make external funding, donations, or national transfers especially important?',
+      'Could you share how the LGU balances local-source revenues with outside support, and what steps help strengthen fiscal resilience?',
   },
   {
     key: 'foreignAidConcentration',
-    label: 'Aid concentration',
-    shortLabel: 'Aid concentration',
+    label: 'External support concentration',
+    shortLabel: 'Support conc.',
     domain: 'A',
     prompt:
-      'Is one donor or country disproportionately shaping projects, equipment, or technical assistance?',
+      'Could you describe how the LGU manages relationships with external supporters or donors to ensure engagements remain balanced and aligned with local needs?',
   },
   {
     key: 'strategicProximity',
-    label: 'Strategic proximity',
-    shortLabel: 'Strategic proximity',
+    label: 'Strategic asset proximity',
+    shortLabel: 'Strategic assets',
     domain: 'A',
     prompt:
-      'How do ports, bases, logistics corridors, or maritime positioning affect foreign engagement in this LGU?',
+      'Could you share how strategic assets, logistics corridors, or geographic positioning shape the LGU’s engagement with outside partners?',
   },
   {
     key: 'economicEnclaves',
-    label: 'Economic enclaves',
-    shortLabel: 'Economic enclaves',
+    label: 'Economic zone presence',
+    shortLabel: 'Econ zones',
     domain: 'A',
     prompt:
-      'Which ecozones, freeports, or industrial clusters create the main foreign-facing entry points?',
+      'Could you describe the role of ecozones, industrial parks, or related economic areas in shaping outside engagement with the LGU?',
   },
   {
     key: 'directForeignDonations',
-    label: 'Direct foreign donations',
-    shortLabel: 'Foreign donations',
+    label: 'Direct external assistance',
+    shortLabel: 'Ext assistance',
     domain: 'A',
     prompt:
-      'How are direct foreign donations recorded, screened, and disclosed to the public or council?',
+      'Could you walk us through how direct external assistance or donations are received, recorded, and communicated by the LGU?',
   },
   {
     key: 'institutionalOpacity',
-    label: 'Institutional opacity',
-    shortLabel: 'Opacity',
+    label: 'Accountability conditions flags',
+    shortLabel: 'Accountability',
     domain: 'B',
     prompt:
-      'Which audit findings, procurement gaps, or documentation issues should be checked first during interviews?',
+      'Could you share how the LGU addresses audit, compliance, and accountability concerns when handling projects or engagements with outside actors?',
   },
   {
     key: 'civicSpaceClosure',
-    label: 'Civic space pressure',
-    shortLabel: 'Civic space',
+    label: 'Civic environment flags',
+    shortLabel: 'Civic environment',
     domain: 'B',
     prompt:
-      'Which media, civil society, or community actors can speak independently, and where are the pressure points?',
+      'Could you describe how the LGU engages with local media, civil society, and community stakeholders on matters involving outside partners?',
   },
   {
     key: 'politicalConcentrationDynasticShare',
-    label: 'Dynastic concentration',
-    shortLabel: 'Dynastic concentration',
+    label: 'Political concentration',
+    shortLabel: 'Political conc.',
     domain: 'B',
     prompt:
-      'Which family networks dominate local decision-making, appointments, or access to government information?',
+      'Could you share how key local decisions are structured to ensure broad consultation and institutional continuity?',
   },
   {
     key: 'partyAlignment',
-    label: 'Party alignment',
-    shortLabel: 'Party alignment',
+    label: 'National-local political divergence',
+    shortLabel: 'Nat-local divergence',
     domain: 'B',
     prompt:
-      'How closely does the LGU track the national coalition line on foreign-facing issues, and where does it diverge?',
+      'Could you help us understand how the LGU coordinates with national government positions when international or foreign-facing issues arise?',
   },
   {
     key: 'foiOrdinance',
-    label: 'FOI ordinance',
-    shortLabel: 'FOI',
+    label: 'Pending disclosure policy adoption',
+    shortLabel: 'Disclosure policy',
     domain: 'B',
     prompt:
-      'What access mechanism exists when researchers request local agreements, donor records, or project documentation?',
+      'Could you describe the LGU’s current approach to disclosure and how researchers may appropriately request documents or public records?',
   },
   {
     key: 'narrativeAlignment',
-    label: 'Narrative alignment',
-    shortLabel: 'Narrative alignment',
+    label: 'Policy position divergence',
+    shortLabel: 'Policy divergence',
     domain: 'C',
     prompt:
-      'Have local leaders framed foreign powers or national foreign policy differently from the national line?',
+      'Could you share how the LGU communicates its policy positions on external or international matters to local stakeholders?',
   },
   {
     key: 'currentForeignPresence',
-    label: 'Current foreign presence',
-    shortLabel: 'Foreign presence',
+    label: 'External presence profile',
+    shortLabel: 'External presence',
     domain: 'C',
     prompt:
-      'Which foreign actors are physically present now, through which sectors, and with what visibility?',
+      'Could you describe the kinds of external actors currently present in the LGU and how the local government engages with them?',
   },
   {
     key: 'reports',
-    label: 'Foreign-linked reporting',
-    shortLabel: 'Reports',
+    label: 'External-linked incident record',
+    shortLabel: 'Incident record',
     domain: 'C',
     prompt:
-      'Which historical reports or incidents should shape interview sequencing and verification?',
+      'Could you help us understand how the LGU reviews and responds to past incidents or reports that may have an external dimension?',
   },
 ];
 
@@ -609,6 +609,7 @@ export function buildPilotDataFromSheets({ scheduleRows, profileRows, newsRows }
 export function profileRadarData(profile, domain) {
   return INDICATOR_META.filter((indicator) => indicator.domain === domain).map((indicator) => ({
     subject: indicator.shortLabel,
+    label: indicator.label,
     value: profile?.indicators?.[indicator.key] ?? 0,
   }));
 }

@@ -9,6 +9,7 @@ import {
   Printer,
   Search,
   ShieldCheck,
+  ShieldEllipsis,
   Users,
 } from 'lucide-react';
 import {
@@ -125,7 +126,7 @@ function profileMapUrl(profile) {
 function Card({ title, subtitle, action, children, className = '' }) {
   return (
     <section
-      className={`rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.05)] print-surface ${className}`}
+      className={`rounded-[28px] border border-[#d7e2ef] bg-white p-6 shadow-[0_22px_60px_rgba(16,37,68,0.08)] print-surface ${className}`}
     >
       {(title || subtitle || action) && (
         <div className="mb-5 flex items-start justify-between gap-4">
@@ -141,10 +142,17 @@ function Card({ title, subtitle, action, children, className = '' }) {
   );
 }
 
-function SummaryCard({ label, value, tone }) {
+function SummaryCard({ label, value, tone, icon: Icon }) {
   return (
-    <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)] print-surface">
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">{label}</p>
+    <div className="rounded-[24px] border border-[#d7e2ef] bg-white p-5 shadow-[0_18px_40px_rgba(16,37,68,0.08)] print-surface">
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">{label}</p>
+        {Icon ? (
+          <div className="rounded-2xl bg-[#edf4ff] p-3 text-[#0f4b9a]">
+            <Icon size={18} />
+          </div>
+        ) : null}
+      </div>
       <p className={`mt-3 text-3xl font-semibold tracking-tight ${tone}`}>{value}</p>
     </div>
   );
@@ -156,8 +164,8 @@ function TabButton({ active, label, icon: Icon, onClick }) {
       onClick={onClick}
       className={`flex items-center gap-3 rounded-full border px-4 py-2.5 text-sm font-medium transition ${
         active
-          ? 'border-slate-900 bg-slate-900 text-white'
-          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+          ? 'border-white bg-white text-[#0d2f59] shadow-[0_10px_24px_rgba(255,255,255,0.18)]'
+          : 'border-white/20 bg-white/10 text-white hover:border-white/40 hover:bg-white/16'
       }`}
     >
       <Icon size={16} />
@@ -172,7 +180,7 @@ function FilterButton({ active, label, onClick }) {
       onClick={onClick}
       className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
         active
-          ? 'border-slate-900 bg-slate-900 text-white'
+          ? 'border-[#0f4b9a] bg-[#0f4b9a] text-white'
           : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
       }`}
     >
@@ -192,15 +200,16 @@ function RadarPanel({ title, domain, profile }) {
     >
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={radarData}>
+          <RadarChart data={radarData} cx="50%" cy="52%" outerRadius="58%" margin={{ top: 24, right: 30, bottom: 18, left: 30 }}>
             <PolarGrid stroke="#cbd5e1" />
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
+              tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }}
             />
             <PolarRadiusAxis angle={30} domain={[0, 1]} tick={false} axisLine={false} />
             <Tooltip
               formatter={(value) => percentLabel(value)}
+              labelFormatter={(_, payload) => payload?.[0]?.payload?.label || ''}
               contentStyle={{
                 backgroundColor: '#ffffff',
                 border: '1px solid #e2e8f0',
@@ -229,7 +238,7 @@ function ProfileListItem({ profile, selected, onClick }) {
       onClick={onClick}
       className={`w-full rounded-[20px] border p-4 text-left transition ${
         selected
-          ? 'border-slate-900 bg-slate-900 text-white'
+          ? 'border-[#0f4b9a] bg-gradient-to-br from-[#0f4b9a] to-[#0c376f] text-white shadow-[0_18px_40px_rgba(15,75,154,0.18)]'
           : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
       }`}
     >
@@ -395,36 +404,94 @@ function MainApp() {
   const typologyFilters = ['All', ...TYPOLOGY_ORDER.filter((typology) =>
     orderedProfiles.some((profile) => profile.typology === typology),
   )];
+  const activeTabLabel = TABS.find((tab) => tab.id === activeTab)?.label || 'Dashboard';
 
   return (
-    <div className="min-h-screen bg-[#f3f5f8] text-slate-900 print:bg-white">
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-900 print:bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-5 lg:px-8 lg:py-8">
-        <header className="mb-6 flex flex-col gap-4 rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)] print-hide lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">PILOT</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              Local Research Dashboard
-            </h1>
+        <section className="hero-panel relative overflow-hidden rounded-[34px] px-6 py-7 text-white print-hide lg:px-10 lg:py-10">
+          <div className="relative z-10 grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="max-w-3xl">
+              <p className="text-xs font-medium uppercase tracking-[0.32em] text-white/70">
+                PILOT
+              </p>
+              <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight tracking-tight lg:text-5xl">
+                Local research intelligence, field planning, and LGU context in one place.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-blue-50/88 lg:text-base">
+                A cleaner operational view for profiles, verified sources, schedules, and discussion briefs.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                {TABS.map((tab) => (
+                  <TabButton
+                    key={tab.id}
+                    active={activeTab === tab.id}
+                    label={tab.label}
+                    icon={tab.icon}
+                    onClick={() => setActiveTab(tab.id)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="hero-brief rounded-[28px] border border-white/14 bg-white/10 p-6 backdrop-blur-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/60">Current view</p>
+                  <h2 className="mt-2 text-2xl font-semibold">{activeTabLabel}</h2>
+                </div>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:border-white/35 hover:bg-white/16"
+                >
+                  <Printer size={16} />
+                  <span>Print</span>
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[20px] border border-white/12 bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/60">Focused LGU</p>
+                  <p className="mt-2 text-lg font-medium">{selectedProfile?.name || 'Loading'}</p>
+                </div>
+                <div className="rounded-[20px] border border-white/12 bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/60">Typology</p>
+                  <p className="mt-2 text-lg font-medium">
+                    {selectedProfile?.typology || '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {TABS.map((tab) => (
-              <TabButton
-                key={tab.id}
-                active={activeTab === tab.id}
-                label={tab.label}
-                icon={tab.icon}
-                onClick={() => setActiveTab(tab.id)}
-              />
-            ))}
-            <button
-              onClick={() => window.print()}
-              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-300"
-            >
-              <Printer size={16} />
-              <span>Print</span>
-            </button>
-          </div>
-        </header>
+        </section>
+
+        <div className="-mt-8 mb-6 grid gap-4 px-1 md:grid-cols-2 xl:grid-cols-4 print-hide">
+          <SummaryCard
+            label="Selected LGUs"
+            value={appData.summary?.profileCount || 0}
+            tone="text-slate-950"
+            icon={Users}
+          />
+          <SummaryCard
+            label="Primary schedule entries"
+            value={appData.summary?.primaryTripCount || 0}
+            tone="text-[#0f4b9a]"
+            icon={CalendarDays}
+          />
+          <SummaryCard
+            label="Reserve entries"
+            value={appData.summary?.reserveTripCount || 0}
+            tone="text-[#0f766e]"
+            icon={MapPinned}
+          />
+          <SummaryCard
+            label="Verified source links"
+            value={appData.summary?.newsCount || 0}
+            tone="text-[#8b1d3b]"
+            icon={Newspaper}
+          />
+        </div>
 
         {!orderedProfiles.length ? (
           <Card
@@ -439,15 +506,12 @@ function MainApp() {
 
         {activeTab === 'dashboard' ? (
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <SummaryCard label="Selected LGUs" value={appData.summary?.profileCount || 0} tone="text-slate-950" />
-              <SummaryCard label="Primary schedule entries" value={appData.summary?.primaryTripCount || 0} tone="text-teal-700" />
-              <SummaryCard label="Reserve entries" value={appData.summary?.reserveTripCount || 0} tone="text-amber-700" />
-              <SummaryCard label="Verified source links" value={appData.summary?.newsCount || 0} tone="text-rose-700" />
-            </div>
-
             <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-              <Card title="LGU order" subtitle="Profiles are arranged by the order column from the sheet.">
+              <Card
+                title="LGU order"
+                subtitle="Profiles are arranged by the order column from the sheet."
+                className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+              >
                 <div className="grid gap-3">
                   {orderedProfiles.map((profile) => (
                     <button
@@ -456,7 +520,7 @@ function MainApp() {
                         setSelectedProfileId(profile.id);
                         setActiveTab('profiles');
                       }}
-                      className="flex items-center justify-between gap-4 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-white"
+                      className="flex items-center justify-between gap-4 rounded-[20px] border border-[#d7e2ef] bg-white px-4 py-3 text-left transition hover:border-[#b9cbdf] hover:bg-[#fbfdff]"
                     >
                       <div>
                         <p className="text-base font-medium text-slate-900">{profile.name}</p>
@@ -477,7 +541,11 @@ function MainApp() {
               </Card>
 
               <div className="grid gap-6">
-                <Card title="Typology distribution" subtitle="Shown in the typology order from the sheet.">
+                <Card
+                  title="Typology distribution"
+                  subtitle="Shown in the typology order from the sheet."
+                  className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+                >
                   <div className="grid gap-3">
                     {typologyCounts.map((item) => (
                       <div
@@ -497,7 +565,11 @@ function MainApp() {
                   </div>
                 </Card>
 
-                <Card title="Upcoming field plan" subtitle="Current schedule rows from the sheet.">
+                <Card
+                  title="Upcoming field plan"
+                  subtitle="Current schedule rows from the sheet."
+                  className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+                >
                   <div className="space-y-3">
                     {(appData.schedules?.primary || []).slice(0, 6).map((item) => (
                       <div
@@ -550,7 +622,11 @@ function MainApp() {
         {activeTab === 'profiles' && selectedProfile ? (
           <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
             <aside className="space-y-5 print-hide">
-              <Card title="Browse LGUs" subtitle="Search and filter the profile list.">
+              <Card
+                title="Browse LGUs"
+                subtitle="Search and filter the profile list."
+                className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+              >
                 <label className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
                   <Search size={16} className="text-slate-400" />
                   <input
@@ -586,7 +662,7 @@ function MainApp() {
             </aside>
 
             <div className="space-y-6">
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)]">
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
                   <div className="space-y-5">
                     <div className="flex flex-wrap items-center gap-3">
@@ -632,7 +708,7 @@ function MainApp() {
                       </div>
                     </div>
 
-                    <div className="rounded-[20px] bg-slate-50 p-5">
+                    <div className="rounded-[20px] bg-[#f4f8fc] p-5">
                       <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Background</p>
                       <p className="mt-3 text-sm leading-7 text-slate-700">
                         {textOrDash(selectedProfile.background)}
@@ -668,7 +744,11 @@ function MainApp() {
                 </div>
               </Card>
 
-              <Card title="Context indicators" subtitle="Socio-economic and structural context from the sheet.">
+              <Card
+                title="Context indicators"
+                subtitle="Socio-economic and structural context from the sheet."
+                className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+              >
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {DETAIL_FIELDS.map((field) => (
                     <div key={field.key} className="rounded-[18px] bg-slate-50 p-4">
@@ -710,7 +790,11 @@ function MainApp() {
                   </p>
                 </Card>
 
-                <Card title="Interview prompts" subtitle="Derived from the strongest indicators.">
+                <Card
+                  title="Suggested interview questions"
+                  subtitle="Politely framed prompts for conversations with mayors, governors, and senior LGU officials."
+                  className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)]"
+                >
                   <div className="space-y-3">
                     {topPrompts(selectedProfile).map((item) => (
                       <div key={item.key} className="rounded-[18px] bg-slate-50 p-4">
