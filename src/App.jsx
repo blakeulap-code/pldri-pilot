@@ -6,7 +6,7 @@ import {
 import { 
   LayoutDashboard, CalendarDays, MapPin, Printer, 
   Building, AlertTriangle, Map as MapIcon, Plane, Ship, ShieldAlert,
-  Edit, Save, X, PlusCircle, Newspaper, Crosshair, User, 
+  Edit, Save, X, PlusCircle, Newspaper, Crosshair, User, Users, Cloud, Camera,
   Activity, RefreshCw, Satellite, Radio
 } from 'lucide-react';
 
